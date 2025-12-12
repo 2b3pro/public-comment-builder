@@ -69,7 +69,7 @@ export default function Dashboard() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     const results = await searchDockets(searchQuery);
     setSearchResults(results);
@@ -133,9 +133,10 @@ export default function Dashboard() {
           <p className="text-gray-500">
             Find federal regulations and draft legally effective public comments in minutes.
           </p>
-          
-          <form onSubmit={handleSearch} className="relative mt-4">
+
+          <form id="docket-search-form" onSubmit={handleSearch} className="relative mt-4">
             <input
+              id="search-input"
               type="text"
               placeholder="Search by keyword or docket ID..."
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm transition-all"
@@ -145,7 +146,8 @@ export default function Dashboard() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               search
             </span>
-            <button 
+            <button
+              id="search-submit-btn"
               type="submit"
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white p-1.5 rounded-lg hover:bg-blue-600 transition-colors"
             >
@@ -157,7 +159,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-md mx-auto w-full p-4 space-y-8 pb-32">
-        
+
         {/* Search Results */}
         {(isSearching || searchResults.length > 0) && (
           <div className="animate-fade-in">
@@ -214,6 +216,7 @@ export default function Dashboard() {
         {!searchResults.length && (
           <div className="flex justify-end">
             <button
+              id="refresh-dockets-btn"
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-primary transition-colors disabled:opacity-50"
@@ -256,7 +259,7 @@ export default function Dashboard() {
 
         {/* Featured / Week */}
         {!searchResults.length && (
-           <section className="animate-slide-up delay-200">
+          <section className="animate-slide-up delay-200">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-blue-500">calendar_month</span>
               Closing This Week ({due7Days.length})

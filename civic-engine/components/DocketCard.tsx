@@ -26,7 +26,7 @@ function formatDeadline(dateStr?: string): string {
 
 export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+    <article className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
       <div className="flex justify-between items-start mb-2">
         <span className="text-xs font-bold text-primary bg-blue-50 px-2 py-1 rounded">
           {docket.docketId}
@@ -59,6 +59,6 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
       >
         Draft Comment
       </Link>
-    </div>
+    </article>
   );
 };

@@ -23,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       <div className="flex flex-col flex-1 px-2 text-center">
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{subtitle}</span>
-        <h2 className="text-gray-900 text-base font-bold leading-tight truncate">{title}</h2>
+        <h1 className="text-gray-900 text-base font-bold leading-tight truncate">{title}</h1>
       </div>
 
       <Link

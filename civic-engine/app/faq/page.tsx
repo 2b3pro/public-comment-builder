@@ -1,4 +1,10 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "How It Works & FAQ",
+  description: "Learn how Public Comment Builder uses AI to help you draft legally substantive comments on federal regulations. Understand the difference between form letters and substantive comments.",
+};
 
 export default function FAQPage() {
   return (
