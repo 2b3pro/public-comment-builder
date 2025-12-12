@@ -7,6 +7,23 @@ interface DocketCardProps {
   commentCount?: number;  // Number of comments drafted via this tool
 }
 
+/**
+ * Format date string to "DD-MMM-YYYY" format.
+ */
+function formatDeadline(dateStr?: string): string {
+  if (!dateStr) return 'TBD';
+
+  // Extract just the date portion (handle both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ" formats)
+  const datePart = dateStr.split('T')[0];
+  const [year, month, day] = datePart.split('-');
+  if (!year || !month || !day) return dateStr;
+
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const monthName = months[parseInt(month, 10) - 1] || month;
+
+  return `${day}-${monthName}-${year}`;
+}
+
 export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) => {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
@@ -16,7 +33,7 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
         </span>
         <span className="text-xs text-red-600 font-medium flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">event_busy</span>
-          Due: {docket.commentEndDate}
+          Due: {formatDeadline(docket.commentEndDate)}
         </span>
       </div>
 

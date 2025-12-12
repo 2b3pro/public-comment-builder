@@ -17,6 +17,7 @@ import {
 import {
   getCached,
   setCached,
+  deleteCached,
   getDashboardCacheKey,
   getDocketCacheKey,
   getSearchCacheKey,
@@ -28,6 +29,7 @@ import {
   recordCommentGenerated,
   getDocketCommentCount as getDbDocketCommentCount,
   getDocketCommentCounts as getDbDocketCommentCounts,
+  getTopRecentDockets as getDbTopRecentDockets,
   getAdminStats as getDbAdminStats,
   AdminStats
 } from '@/lib/stats-db';
@@ -165,9 +167,26 @@ export async function getDocument(id: string): Promise<DocketSummary | null> {
   return docket;
 }
 
-export async function refreshDockets() {
-  console.log(`[actions] refreshDockets: revalidating path /`);
+export async function refreshDockets(): Promise<DocketSummary[]> {
+  console.log(`[actions] refreshDockets: clearing cache and fetching fresh from API`);
+
+  // Delete the dashboard cache
+  const cacheKey = getDashboardCacheKey();
+  await deleteCached(cacheKey);
+
+  // Fetch fresh from API
+  const results = await regulationsApi.getDocumentsClosingRange(7);
+  console.log(`[actions] refreshDockets: got ${results.length} fresh results`);
+
+  // Cache the fresh results
+  if (results.length > 0) {
+    await setCached(cacheKey, results, CACHE_TTL.DASHBOARD);
+  }
+
+  // Revalidate the page
   revalidatePath('/');
+
+  return results;
 }
 
 // ============================================================
@@ -317,6 +336,25 @@ export async function getDocketCommentCounts(docketIds: string[]): Promise<Recor
   } catch (err) {
     console.error('[actions] getDocketCommentCounts: error', err);
     return {};
+  }
+}
+
+export interface TrendingDocket {
+  docketId: string;
+  docketTitle: string;
+  agencyId: string;
+  count: number;
+}
+
+/**
+ * Get top dockets by comment count (for landing page "trending" section).
+ */
+export async function getTopRecentDockets(limit: number = 3): Promise<TrendingDocket[]> {
+  try {
+    return getDbTopRecentDockets(limit);
+  } catch (err) {
+    console.error('[actions] getTopRecentDockets: error', err);
+    return [];
   }
 }
 

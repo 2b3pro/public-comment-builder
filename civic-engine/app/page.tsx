@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { DocketCard } from '@/components/DocketCard';
-import { getDashboardDockets, searchDockets, refreshDockets, getDocketCommentCounts } from '@/app/actions';
+import { getDashboardDockets, searchDockets, refreshDockets, getDocketCommentCounts, getTopRecentDockets, TrendingDocket } from '@/app/actions';
 import { DocketSummary } from '@/lib/regulations-api';
 
 export default function Dashboard() {
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const [due3Days, setDue3Days] = useState<DocketSummary[]>([]);
   const [due7Days, setDue7Days] = useState<DocketSummary[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [trendingDockets, setTrendingDockets] = useState<TrendingDocket[]>([]);
 
   const fetchData = useCallback(async () => {
     // Single efficient call for all dashboard data (next 7 days)
@@ -54,6 +56,10 @@ export default function Dashboard() {
     const allDocketIds = [...finalToday, ...final3Days, ...final7Days].map(d => d.docketId);
     const counts = await getDocketCommentCounts(allDocketIds);
     setCommentCounts(counts);
+
+    // Fetch top trending dockets (by comment count)
+    const trending = await getTopRecentDockets(3);
+    setTrendingDockets(trending);
   }, []);
 
   useEffect(() => {
@@ -72,8 +78,47 @@ export default function Dashboard() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refreshDockets();
-    await fetchData();
+
+    // Fetch fresh from API (bypasses cache)
+    const allDocs = await refreshDockets();
+
+    // Dates for filtering
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const in3Days = new Date();
+    in3Days.setDate(today.getDate() + 3);
+    const in3DaysStr = in3Days.toISOString().split('T')[0];
+
+    // Filter buckets
+    const todayDocs = allDocs.filter(d => d.commentEndDate?.split('T')[0] === todayStr);
+    const threeDayDocs = allDocs.filter(d => {
+      const endDate = d.commentEndDate?.split('T')[0];
+      return endDate && endDate <= in3DaysStr && endDate > todayStr;
+    });
+    const sevenDayDocs = allDocs.filter(d => {
+      const endDate = d.commentEndDate?.split('T')[0];
+      return endDate && endDate > in3DaysStr;
+    });
+
+    // Apply mocks if empty
+    const finalToday = todayDocs.length ? todayDocs : [MOCK_DOCKET_TODAY];
+    const final3Days = threeDayDocs.length ? threeDayDocs : [MOCK_DOCKET_3];
+    const final7Days = sevenDayDocs.length ? sevenDayDocs : [MOCK_DOCKET_7];
+
+    setDueToday(finalToday);
+    setDue3Days(final3Days);
+    setDue7Days(final7Days);
+
+    // Fetch comment counts
+    const allDocketIds = [...finalToday, ...final3Days, ...final7Days].map(d => d.docketId);
+    const counts = await getDocketCommentCounts(allDocketIds);
+    setCommentCounts(counts);
+
+    // Fetch trending
+    const trending = await getTopRecentDockets(3);
+    setTrendingDockets(trending);
+
     setIsRefreshing(false);
   };
 
@@ -130,10 +175,45 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Trending Dockets - Most Commented */}
+        {!searchResults.length && trendingDockets.length > 0 && (
+          <section className="animate-fade-in">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-purple-500">trending_up</span>
+              Trending — Most Commented
+            </h2>
+            <div className="space-y-3">
+              {trendingDockets.map((docket, idx) => (
+                <Link
+                  key={docket.docketId}
+                  href={`/docket/${encodeURIComponent(docket.docketId)}`}
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-primary/30 transition-all group"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-600 rounded-lg font-bold text-sm">
+                    #{idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
+                      {docket.docketTitle || docket.docketId}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {docket.agencyId} • {docket.docketId}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+                    <span className="material-symbols-outlined text-[14px]">groups</span>
+                    {docket.count}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Refresh Control */}
         {!searchResults.length && (
           <div className="flex justify-end">
-            <button 
+            <button
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-primary transition-colors disabled:opacity-50"
@@ -152,7 +232,7 @@ export default function Dashboard() {
           <section className="animate-slide-up">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-red-600">alarm</span>
-              Closing Today
+              Closing Today ({dueToday.length})
             </h2>
             <div className="space-y-4">
               {dueToday.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
@@ -166,7 +246,7 @@ export default function Dashboard() {
           <section className="animate-slide-up delay-100">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-orange-500">upcoming</span>
-              Closing in 3 Days
+              Closing in 3 Days ({due3Days.length})
             </h2>
             <div className="space-y-4">
               {due3Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
@@ -179,7 +259,7 @@ export default function Dashboard() {
            <section className="animate-slide-up delay-200">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-blue-500">calendar_month</span>
-              Closing This Week
+              Closing This Week ({due7Days.length})
             </h2>
             <div className="space-y-4">
               {due7Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}

@@ -51,7 +51,9 @@ For EACH position:
 • OPPOSE
 • MIXED / CONDITIONAL
 
-Provide **3–4 reason cards per position**, aligned to federal evaluation criteria, such as:
+Provide **6–8 reason cards per position**, **ranked from strongest to weakest argument**. The first 3 cards should be the most compelling, legally substantive arguments. Later cards can address secondary concerns or niche impacts.
+
+Align cards to federal evaluation criteria, such as:
 1. Problem definition & necessity
 2. Accuracy of scientific, technical, or economic assumptions
 3. Cost-benefit balance

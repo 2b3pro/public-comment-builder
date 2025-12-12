@@ -55,6 +55,7 @@ export default function DocketPage() {
   // UI state
   const [regeneratingCardId, setRegeneratingCardId] = useState<string | null>(null);
   const [generatedDraft, setGeneratedDraft] = useState('');
+  const [visibleCardCount, setVisibleCardCount] = useState(3); // Progressive disclosure: start with 3 cards
 
   // ============================================================
   // FIRST AI CALL: Analyze docket on mount
@@ -107,6 +108,7 @@ export default function DocketPage() {
     // Clear previous selections when position changes
     setSelectedArgumentIds([]);
     setCardCustomText({});
+    setVisibleCardCount(3); // Reset to show first 3 cards
   };
 
   const handleCardCustomTextChange = (cardId: string, text: string) => {
@@ -116,6 +118,7 @@ export default function DocketPage() {
   const handleContinueToReasoning = () => {
     if (selectedPosition) {
       setStep('reasoning');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -203,17 +206,25 @@ export default function DocketPage() {
 
       setGeneratedDraft(draft);
       setStep('review');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('[DocketPage] Error generating draft:', err);
       setError('Failed to generate comment draft. Please try again.');
       setStep('reasoning');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleBack = () => {
-    if (step === 'review') setStep('reasoning');
-    else if (step === 'reasoning') setStep('stance');
-    else window.history.back();
+    if (step === 'review') {
+      setStep('reasoning');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (step === 'reasoning') {
+      setStep('stance');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.history.back();
+    }
   };
 
   const handleCopy = () => {
@@ -355,6 +366,19 @@ export default function DocketPage() {
                         </ul>
                       </div>
                     )}
+
+                    {/* Link to original on Regulations.gov */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <a
+                        href={`https://www.regulations.gov/docket/${encodeURIComponent(docketId)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                      >
+                        <span className="material-symbols-outlined text-sm">open_in_new</span>
+                        View original on Regulations.gov
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <div className="animate-pulse space-y-3">
@@ -474,8 +498,8 @@ export default function DocketPage() {
                 </span>
               </div>
 
-              {/* Reason Cards */}
-              {currentReasonCards.map((card, idx) => {
+              {/* Reason Cards - Progressive Disclosure */}
+              {currentReasonCards.slice(0, visibleCardCount).map((card, idx) => {
                 // Convert ReasonCard arguments to ReasoningOption format
                 // Use compound key (cardId::argId) to ensure uniqueness across cards
                 const options: ReasoningOption[] = card.arguments.map(arg => ({
@@ -501,6 +525,20 @@ export default function DocketPage() {
                   />
                 );
               })}
+
+              {/* Add Another Argument Button */}
+              {currentReasonCards.length > visibleCardCount && (
+                <button
+                  onClick={() => setVisibleCardCount(prev => prev + 1)}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 mb-4 text-sm font-medium text-primary bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">add_circle</span>
+                  Add another argument category
+                  <span className="text-xs text-blue-400">
+                    ({currentReasonCards.length - visibleCardCount} more available)
+                  </span>
+                </button>
+              )}
 
               <div className="h-px bg-gray-200 mx-4 my-6"></div>
 

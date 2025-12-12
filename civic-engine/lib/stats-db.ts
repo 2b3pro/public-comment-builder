@@ -149,6 +149,31 @@ export function getDocketCommentCounts(docketIds: string[]): Record<string, numb
   return counts;
 }
 
+/**
+ * Get top dockets by comment count (public - for landing page).
+ * Returns dockets sorted by total comments, most recent activity first for ties.
+ */
+export function getTopRecentDockets(limit: number = 3): { docketId: string; docketTitle: string; agencyId: string; count: number }[] {
+  const db = getDb();
+
+  const stmt = db.prepare(`
+    SELECT
+      docket_id as docketId,
+      docket_title as docketTitle,
+      agency_id as agencyId,
+      COUNT(*) as count,
+      MAX(created_at) as lastActivity
+    FROM comment_stats
+    GROUP BY docket_id
+    HAVING count > 0
+    ORDER BY count DESC, lastActivity DESC
+    LIMIT ?
+  `);
+
+  const results = stmt.all(limit) as { docketId: string; docketTitle: string; agencyId: string; count: number }[];
+  return results;
+}
+
 // ============================================================
 // READ OPERATIONS (Admin)
 // ============================================================
