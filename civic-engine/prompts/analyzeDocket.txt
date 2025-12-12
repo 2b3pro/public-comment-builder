@@ -1,0 +1,109 @@
+Analyze the following federal regulatory docket and generate a citizen-facing analysis that enables the drafting of substantive, legally meaningful public comments.
+
+DOCKET TEXT:
+{{docketText}}
+
+OBJECTIVE:
+Produce structured, plain-language intelligence that helps ordinary citizens submit comments agencies must meaningfully consider under the Administrative Procedure Act.
+
+OPERATING PREMISE (Federal Reality Check):
+• Comments that merely express support or opposition carry little weight.
+• Agencies must respond to significant, relevant, evidence-based comments.
+• The strongest comments explain *how* the proposal affects real people, assumptions, markets, or systems—often through lived experience or concrete examples.
+
+YOUR ANALYSIS MUST DO THE FOLLOWING:
+
+────────────────────────────────
+I. PLAIN-LANGUAGE ORIENTATION
+────────────────────────────────
+• Write a 2–3 sentence summary explaining:
+  – What this regulation proposes
+  – Why it matters to ordinary people
+• Avoid jargon. Assume no prior policy knowledge.
+
+────────────────────────────────
+II. COMMENTING INSTRUCTIONS EXTRACTION
+────────────────────────────────
+From the docket text, extract and present:
+• Deadline(s)
+• Submission method(s) - identify if email submission is accepted
+• Submission email address - if an email address is provided for submitting comments, extract it exactly as written
+• Required format or questions
+• Any explicit areas the agency requests comment on
+• Special frameworks referenced (e.g., PRA factors, cost-benefit criteria)
+
+────────────────────────────────
+III. ISSUE MAP (WHAT’S REALLY AT STAKE)
+────────────────────────────────
+Identify:
+• The problem the agency claims to address
+• The core assumptions underlying the proposal
+• The primary mechanisms of regulation (who must do what, by when, at what cost)
+• Stakeholders likely affected (including those possibly overlooked)
+
+────────────────────────────────
+IV. REASON-CARD GENERATION
+────────────────────────────────
+Generate **reason cards** that users can select from when drafting comments.
+
+For EACH position:
+• SUPPORT
+• OPPOSE
+• MIXED / CONDITIONAL
+
+Provide **3–4 reason cards per position**, aligned to federal evaluation criteria, such as:
+1. Problem definition & necessity
+2. Accuracy of scientific, technical, or economic assumptions
+3. Cost-benefit balance
+4. Distributional impacts (who bears costs vs. who benefits)
+5. Impacts on small entities, vulnerable populations, or specific sectors
+6. Non-monetizable impacts (privacy, dignity, equity, civil liberties, fairness)
+7. Implementation feasibility & unintended consequences
+
+────────────────────────────────
+V. REASON-CARD STRUCTURE (STRICT)
+────────────────────────────────
+Each reason card must include:
+
+• **Unique ID**  
+  (e.g., `sup-cost-1`, `opp-impl-2`, `mix-equity-1`)
+
+• **Title**  
+  Short, descriptive, neutral-toned
+
+• **Icon Tag**  
+  Choose ONE Material Symbol that best fits:
+  shield · lock · timer · lightbulb · verified_user · speed · smartphone · tune · filter_list · policy · gavel · description · trending_up · visibility · groups · balance · warning
+
+• **Core Argument (2–3 bullets)**  
+  Each bullet should:
+  – Reference a specific provision, assumption, estimate, or mechanism in the docket
+  – Explain why it matters legally or practically
+  – Be phrased in formal, substantive language appropriate for regulatory comments
+
+• **Lived-Experience Hook**  
+  1–2 sentences explaining how an individual, worker, business owner, caregiver, consumer, or community member might credibly support this argument with real-world experience.
+
+• **Blind Spots / Unintended Effects**  
+  Identify what the agency may have underestimated, ignored, or oversimplified.
+
+────────────────────────────────
+VI. COMMENT DRAFTING SCHEMA (OUTPUT-READY)
+────────────────────────────────
+Structure all outputs so they can be directly assembled into a public comment using this canonical format:
+
+1. Introduction — why the commenter is affected or engaged
+2. Regulation Reference — cite the specific portion addressed
+3. Analysis — substantive argument with reasoning
+4. Recommendation — concrete change, clarification, or alternative
+5. Conclusion — restate concern and requested action
+
+Do NOT draft full comments unless explicitly requested—your role is to supply the *reasoning building blocks*.
+
+────────────────────────────────
+QUALITY BARS (NON-NEGOTIABLE):
+• Neutral, professional, legally literate tone
+• No advocacy slogans or emotional appeals
+• No vague generalities
+• Every claim must be tethered to the docket text or a plausible evidentiary gap
+• Assume the output will be used verbatim in a federal rulemaking record
