@@ -36,16 +36,19 @@ npm install
 
 ### Environment Variables
 
-Create a `.env.local` file:
+Create a `.env` file (see `.env.example`):
 
 ```env
-# Regulations.gov API (optional - falls back to DEMO_KEY)
-REGULATIONSGOV_API_KEY=your_api_key
+# Google Gemini API (Required for AI features)
+GOOGLE_API_KEY=your_api_key
 
-# Google Gemini API (optional - falls back to mock data)
-GEMINI_API_KEY=your_api_key
+# Admin Stats (Required for /admin/stats)
+ADMIN_SECRET_KEY=secure_random_string
 
-# Redis URL (optional - falls back to in-memory/no caching)
+# App URL (Required for Sitemap/SEO)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Redis URL (Optional - for caching)
 REDIS_URL=redis://localhost:6379
 ```
 
@@ -81,14 +84,19 @@ The app uses a streamlined two-call AI pattern:
    - Custom text you've added
    - Proper formatting for regulatory proceedings
 
+### Data & Stats
+
+- **SQLite** (`data/stats.db`) - Stores anonymous usage statistics (total comments generated, top dockets, argument topics).
+- **Graceful Degradation** - If the database cannot be written to (e.g. read-only serverless environments), stats collection is silently disabled while the core app keeps working.
+
 ### Key Technologies
 
 - **Next.js 16** - App Router with Server Actions
 - **Google Gemini** - AI analysis and comment generation
+- **Better-SQLite3** - Local database for stats
 - **Redis** - Caching for docket content (7 days) and searches (24 hours)
 - **Regulations.gov API** - Federal regulatory data
 - **Tailwind CSS v4** - Styling
-- **Material Symbols** - Icons
 
 ### Project Structure
 
@@ -97,30 +105,38 @@ civic-engine/
 ├── app/
 │   ├── page.tsx           # Dashboard - browse regulations
 │   ├── docket/[id]/       # Comment builder wizard
+│   ├── admin/stats/       # Usage statistics dashboard
 │   └── actions.ts         # Server actions (API calls, AI)
 ├── components/
 │   ├── SiteHeader.tsx     # Global header
-│   ├── SiteFooter.tsx     # Global footer
 │   ├── ReasoningCard.tsx  # Argument selection cards
 │   └── StanceSelector.tsx # Position picker
 ├── lib/
 │   ├── ai-generator.ts    # Gemini integration
 │   ├── regulations-api.ts # Regulations.gov client
+│   ├── stats-db.ts        # SQLite database layer
 │   └── redis.ts           # Caching utilities
-└── prompts/
-    ├── analyzeDocket.txt       # First AI call prompt
-    ├── regenerateReasonCard.txt # Refresh arguments
-    └── generateFinalComment.txt # Second AI call prompt
+└── prompts/               # AI Prompt templates
 ```
 
 ## Caching Strategy
 
-- **Dashboard dockets**: Cached daily (24h TTL) since new regulations are posted infrequently
+- **Dashboard dockets**: Cached daily (24h TTL)
 - **Individual docket content**: Cached for 7 days since regulatory text doesn't change
 - **Search results**: Cached daily per query
-- **AI analysis**: Not cached (regenerated each visit for freshness)
+- **AI analysis**: Cached for 7 days (expensive operation, result is static for the same docket)
 
-Redis is optional - the app works without it but API calls won't be cached across requests.
+Redis is optional - the app works without it but API calls will be slower.
+
+## Deployment
+
+### Vercel
+
+This project is optimized for Vercel deployment.
+
+1. **Read-Only Filesystem**: The app automatically detects if it cannot write to the SQLite database and disables stats collection to prevent crashes.
+2. **Environment Variables**: See `VERCEL_DEPLOY.md` for a complete guide on configuring your production environment.
+3. **Caching**: Supports Vercel KV or Upstash Redis automatically via `KV_URL`.
 
 ## Contributing
 

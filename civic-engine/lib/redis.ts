@@ -1,44 +1,59 @@
 import Redis from 'ioredis';
 
-// Redis connection - uses REDIS_URL env var or defaults to localhost
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+// Redis connection - prefers KV_URL (Vercel) or REDIS_URL, otherwise undefined
+const REDIS_URL = process.env.KV_URL || process.env.REDIS_URL;
 
 // Singleton Redis client
 let redisClient: Redis | null = null;
+let isRedisDisabled = false;
 
 /**
  * Get the Redis client instance (singleton pattern).
- * Returns null if Redis is not available.
+ * Returns null if Redis is not configured or available.
  */
 export function getRedisClient(): Redis | null {
-  if (redisClient) {
-    return redisClient;
+  if (redisClient) return redisClient;
+  if (isRedisDisabled) return null;
+
+  if (!REDIS_URL) {
+    // No Redis configured, disable silently
+    isRedisDisabled = true;
+    console.log('[redis] No REDIS_URL or KV_URL found. Caching disabled.');
+    return null;
   }
 
   try {
     redisClient = new Redis(REDIS_URL, {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1, // Fail fast on Vercel functions
+      connectTimeout: 2000,    // Fail fast
       retryStrategy: (times) => {
-        if (times > 3) {
-          console.warn('[redis] Max retries reached, giving up');
+        if (times > 2) {
+          console.warn('[redis] Connection failed, disabling Redis.');
+          isRedisDisabled = true;
           return null; // Stop retrying
         }
-        return Math.min(times * 100, 2000); // Retry with exponential backoff
+        return 1000; // Retry after 1s
       },
-      lazyConnect: true,
+      lazyConnect: true, // Don't connect until used
     });
 
     redisClient.on('error', (err) => {
-      console.warn('[redis] Connection error:', err.message);
+      // Suppress noisy connection errors if we can't connect
+      if (!isRedisDisabled) {
+        console.warn('[redis] Connection error:', err.message);
+      }
     });
 
-    redisClient.on('connect', () => {
-      console.log('[redis] Connected successfully');
+    // Handle initial connection failure explicitly for lazyConnect
+    redisClient.connect().catch(() => {
+      isRedisDisabled = true;
+      redisClient = null;
     });
 
     return redisClient;
   } catch (error) {
     console.warn('[redis] Failed to create client:', error);
+    isRedisDisabled = true;
     return null;
   }
 }
