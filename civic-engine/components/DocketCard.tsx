@@ -29,7 +29,7 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
     <article className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
       <div className="flex justify-between items-start mb-2">
         <span className="text-xs font-bold text-primary bg-blue-50 px-2 py-1 rounded">
-          {docket.docketId}
+          {docket.id}
         </span>
         <span className="text-xs text-red-600 font-medium flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">event_busy</span>
@@ -48,13 +48,13 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
       {/* Comment count badge */}
       {commentCount !== undefined && commentCount > 0 && (
         <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-          <span className="material-symbols-outlined text-[14px]">groups</span>
+          <span className="material-symbols-outlined text--[14px]">groups</span>
           <span>{commentCount} comment{commentCount !== 1 ? 's' : ''} drafted</span>
         </div>
       )}
 
       <Link
-        href={`/docket/${encodeURIComponent(docket.docketId)}`}
+        href={`/docket/${encodeURIComponent(docket.id)}`}
         className="block w-full text-center bg-gray-50 hover:bg-gray-100 text-primary font-bold py-2 rounded-lg text-sm transition-colors"
       >
         Draft Comment
