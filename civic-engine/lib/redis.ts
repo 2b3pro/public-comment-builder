@@ -1,7 +1,8 @@
-import Redis from 'ioredis';
+import { Redis } from '@upstash/redis';
 
-// Redis connection - prefers KV_URL (Vercel) or REDIS_URL, otherwise undefined
-const REDIS_URL = process.env.KV_URL || process.env.REDIS_URL;
+// Determine configuration from environment
+const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // Singleton Redis client
 let redisClient: Redis | null = null;
@@ -15,39 +16,18 @@ export function getRedisClient(): Redis | null {
   if (redisClient) return redisClient;
   if (isRedisDisabled) return null;
 
-  if (!REDIS_URL) {
+  if (!url || !token) {
     // No Redis configured, disable silently
     isRedisDisabled = true;
-    console.log('[redis] No REDIS_URL or KV_URL found. Caching disabled.');
+    console.log('[redis] No KV_REST_API_URL/TOKEN or UPSTASH_REDIS_REST_URL/TOKEN found. Caching disabled.');
     return null;
   }
 
   try {
-    redisClient = new Redis(REDIS_URL, {
-      maxRetriesPerRequest: 1, // Fail fast on Vercel functions
-      connectTimeout: 2000,    // Fail fast
-      retryStrategy: (times) => {
-        if (times > 2) {
-          console.warn('[redis] Connection failed, disabling Redis.');
-          isRedisDisabled = true;
-          return null; // Stop retrying
-        }
-        return 1000; // Retry after 1s
-      },
-      lazyConnect: true, // Don't connect until used
-    });
-
-    redisClient.on('error', (err) => {
-      // Suppress noisy connection errors if we can't connect
-      if (!isRedisDisabled) {
-        console.warn('[redis] Connection error:', err.message);
-      }
-    });
-
-    // Handle initial connection failure explicitly for lazyConnect
-    redisClient.connect().catch(() => {
-      isRedisDisabled = true;
-      redisClient = null;
+    redisClient = new Redis({
+      url,
+      token,
+      // Optional: automatic retries are handled by the client by default
     });
 
     return redisClient;
@@ -117,10 +97,12 @@ export async function getCached<T>(key: string): Promise<T | null> {
   if (!client) return null;
 
   try {
-    const data = await client.get(key);
+    // Upstash Redis automatically parses JSON if the value is a JSON string/object
+    const data = await client.get<T>(key);
+    
     if (data) {
       console.log(`[redis] Cache HIT: ${key}`);
-      return JSON.parse(data) as T;
+      return data;
     }
     console.log(`[redis] Cache MISS: ${key}`);
     return null;
@@ -138,7 +120,8 @@ export async function setCached<T>(key: string, data: T, ttlSeconds: number): Pr
   if (!client) return;
 
   try {
-    await client.setex(key, ttlSeconds, JSON.stringify(data));
+    // Upstash Redis automatically stringifies objects
+    await client.set(key, data, { ex: ttlSeconds });
     console.log(`[redis] Cache SET: ${key} (TTL: ${ttlSeconds}s)`);
   } catch (error) {
     console.warn(`[redis] Error setting ${key}:`, error);
@@ -168,9 +151,11 @@ export async function isRedisAvailable(): Promise<boolean> {
   if (!client) return false;
 
   try {
+    // A simple ping to check connectivity
     await client.ping();
     return true;
   } catch {
     return false;
   }
 }
+
