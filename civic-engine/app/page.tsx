@@ -149,6 +149,22 @@ export default function Dashboard() {
             Find federal regulations and draft legally effective public comments in minutes.
           </p>
 
+          {/* Easy as 1-2-3 Steps */}
+          <div className="flex justify-center gap-6 mt-6 mb-2">
+            <div className="flex flex-col items-center">
+              <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white text-2xl font-bold">1</span>
+              <span className="mt-2 text-sm font-medium text-gray-700">Find a rule</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white text-2xl font-bold">2</span>
+              <span className="mt-2 text-sm font-medium text-gray-700">Pick arguments</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white text-2xl font-bold">3</span>
+              <span className="mt-2 text-sm font-medium text-gray-700">Submit comment</span>
+            </div>
+          </div>
+
           <form id="docket-search-form" onSubmit={handleSearch} className="relative mt-4">
             <input
               id="search-input"

@@ -37,6 +37,7 @@ import { deduplicatedRequest } from '@/lib/request-dedup';
 import {
   getAnalysisFromDb,
   setAnalysisInDb,
+  deleteAnalysisFromDb,
   getDocketTextFromDb,
   setDocketTextInDb,
   getCachedDocketIds
@@ -290,8 +291,11 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
   console.log(`[actions] performDocketAnalysis: calling AI analyzer`);
   const analysis = await analyzeDocket(docketText);
 
-  // Apply status and objectType
-  const result = applyOpenForCommentStatus(analysis, isOpenForComment, objectType);
+  // Apply status, objectType, and timestamp
+  const result = {
+    ...applyOpenForCommentStatus(analysis, isOpenForComment, objectType),
+    analyzedAt: new Date().toISOString(),
+  };
 
   // Store in both caches
   await setCached(cacheKey, result, CACHE_TTL.ANALYSIS);
@@ -318,6 +322,26 @@ function applyOpenForCommentStatus(
     // Preserve existing objectType if already set (from cache), otherwise use provided value
     objectType: analysis.objectType || objectType || 'document',
   };
+}
+
+/**
+ * Force reanalyze a docket by clearing all caches and performing fresh AI analysis.
+ * Useful when cached data is stale or incomplete.
+ */
+export async function forceReanalyzeDocket(docketId: string): Promise<DocketAnalysis> {
+  console.log(`[actions] forceReanalyzeDocket: clearing caches for ${docketId}`);
+
+  // Clear Redis cache
+  const cacheKey = getAnalysisCacheKey(docketId);
+  await deleteCached(cacheKey);
+
+  // Clear SQLite cache
+  deleteAnalysisFromDb(docketId);
+
+  console.log(`[actions] forceReanalyzeDocket: caches cleared, performing fresh analysis`);
+
+  // Perform fresh analysis (will skip cache checks since we just cleared them)
+  return performDocketAnalysis(docketId);
 }
 
 /**

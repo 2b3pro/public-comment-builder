@@ -13,7 +13,8 @@ import { ShareDocket } from '@/components/ShareDocket';
 import {
   analyzeDocketContent,
   regenerateReasonCardAction,
-  generateCommentDraft
+  generateCommentDraft,
+  forceReanalyzeDocket
 } from '@/app/actions';
 import {
   DocketAnalysis,
@@ -57,6 +58,7 @@ export default function DocketPage() {
   const [regeneratingCardId, setRegeneratingCardId] = useState<string | null>(null);
   const [generatedDraft, setGeneratedDraft] = useState('');
   const [visibleCardCount, setVisibleCardCount] = useState(3); // Progressive disclosure: start with 3 cards
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   // ============================================================
   // FIRST AI CALL: Analyze docket on mount
@@ -110,6 +112,27 @@ export default function DocketPage() {
     setSelectedArgumentIds([]);
     setCardCustomText({});
     setVisibleCardCount(3); // Reset to show first 3 cards
+  };
+
+  const handleForceReanalyze = async () => {
+    setIsReanalyzing(true);
+    setError(null);
+    try {
+      console.log(`[DocketPage] Force reanalyzing ${docketId}`);
+      const result = await forceReanalyzeDocket(docketId);
+      setAnalysis(result);
+      // Reset user selections since analysis changed
+      setSelectedPosition(null);
+      setSelectedArgumentIds([]);
+      setCardCustomText({});
+      setStep('stance');
+      console.log(`[DocketPage] Force reanalysis complete`);
+    } catch (err) {
+      console.error('[DocketPage] Error force reanalyzing:', err);
+      setError('Failed to reanalyze. Please try again.');
+    } finally {
+      setIsReanalyzing(false);
+    }
   };
 
   const handleCardCustomTextChange = (cardId: string, text: string) => {
@@ -458,6 +481,26 @@ export default function DocketPage() {
                         <span className="material-symbols-outlined text-sm">open_in_new</span>
                         View original on Regulations.gov
                       </a>
+                    </div>
+
+                    {/* Analysis info and reanalyze button */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs text-gray-400">
+                        {analysis.analyzedAt
+                          ? `Analyzed ${new Date(analysis.analyzedAt).toLocaleDateString()} at ${new Date(analysis.analyzedAt).toLocaleTimeString()}`
+                          : 'Analysis from cache'
+                        }
+                      </span>
+                      <button
+                        onClick={handleForceReanalyze}
+                        disabled={isReanalyzing}
+                        className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <span className={`material-symbols-outlined text-sm ${isReanalyzing ? 'animate-spin' : ''}`}>
+                          {isReanalyzing ? 'progress_activity' : 'refresh'}
+                        </span>
+                        {isReanalyzing ? 'Reanalyzing...' : 'Reanalyze'}
+                      </button>
                     </div>
                   </div>
                 ) : (

@@ -77,7 +77,8 @@ const docketAnalysisSchema: ResponseSchema = {
         submissionEmail: { type: SchemaType.STRING, description: "Email address for submitting comments if mentioned in the docket, or 'NONE' if email submission is not available" },
         onlineSubmission: { type: SchemaType.BOOLEAN, description: "True if the agency accepts online submission via regulations.gov or similar portal" },
         submissionMethodsDescription: { type: SchemaType.STRING, description: "Plain-language description of ALL submission methods the agency accepts (e.g., 'Submit online at regulations.gov, by email to comments@agency.gov, or by mail to...')" }
-      }
+      },
+      required: ["submissionEmail", "onlineSubmission", "submissionMethodsDescription"]
     },
     positions: {
       type: SchemaType.OBJECT,
@@ -230,6 +231,7 @@ export interface DocketAnalysis {
   };
   openForComment?: boolean; // Live status from Regulations.gov
   objectType?: 'document' | 'docket'; // Type for correct Regulations.gov URL
+  analyzedAt?: string; // ISO timestamp of when the analysis was performed/cached
 }
 
 // Legacy type alias for backward compatibility
