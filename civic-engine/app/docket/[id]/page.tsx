@@ -9,6 +9,7 @@ import { ReasoningCard, ReasoningOption } from '@/components/ReasoningCard';
 import { ImpactToggle } from '@/components/ImpactToggle';
 import { SubmissionGuidelines } from '@/components/SubmissionGuidelines';
 import { CommentPreview } from '@/components/CommentPreview';
+import { ShareDocket } from '@/components/ShareDocket';
 import {
   analyzeDocketContent,
   regenerateReasonCardAction,
@@ -545,6 +546,14 @@ export default function DocketPage() {
                 <p className="text-xs text-gray-400 text-center mt-3">
                   {analysis?.positions[selectedPosition || 'oppose'].reasonCards.length || 0} argument categories available
                 </p>
+              </div>
+
+              {/* Share Widget */}
+              <div className="mt-8 animate-fade-in delay-200">
+                <ShareDocket
+                  docketId={docketId}
+                  docketTitle={analysis?.summary.split('.')[0]} // Rough guess at title if not explicit, but good enough
+                />
               </div>
             </div>
           )}

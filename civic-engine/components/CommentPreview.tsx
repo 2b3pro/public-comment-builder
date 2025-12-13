@@ -1,4 +1,5 @@
 import React from 'react';
+import { ShareDocket } from '@/components/ShareDocket';
 
 interface CommentPreviewProps {
   draft: string;
@@ -99,6 +100,11 @@ export const CommentPreview: React.FC<CommentPreviewProps> = ({
             Open Regulations.gov in new tab
           </a>
         )}
+
+        {/* Share Widget */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <ShareDocket docketId={docketId || ''} className="bg-indigo-50/50" />
+        </div>
       </div>
     </div>
   );
