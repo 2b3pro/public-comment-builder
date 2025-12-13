@@ -74,7 +74,9 @@ const docketAnalysisSchema: ResponseSchema = {
         requiredPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
         deadline: { type: SchemaType.STRING },
         submissionMethod: { type: SchemaType.STRING },
-        submissionEmail: { type: SchemaType.STRING, description: "Email address for submitting comments, if mentioned in the docket" }
+        submissionEmail: { type: SchemaType.STRING, description: "Email address for submitting comments if mentioned in the docket, or 'NONE' if email submission is not available" },
+        onlineSubmission: { type: SchemaType.BOOLEAN, description: "True if the agency accepts online submission via regulations.gov or similar portal" },
+        submissionMethodsDescription: { type: SchemaType.STRING, description: "Plain-language description of ALL submission methods the agency accepts (e.g., 'Submit online at regulations.gov, by email to comments@agency.gov, or by mail to...')" }
       }
     },
     positions: {
@@ -213,7 +215,9 @@ export interface CommentingInstructions {
   requiredPoints?: string[];
   deadline?: string;
   submissionMethod?: string;
-  submissionEmail?: string; // Email address for comment submission, if available
+  submissionEmail?: string; // Email address for comment submission, or "NONE" if not available
+  onlineSubmission?: boolean; // True if agency accepts online submission via regulations.gov
+  submissionMethodsDescription?: string; // Human-readable description of all accepted submission methods
 }
 
 export interface DocketAnalysis {
@@ -252,7 +256,10 @@ const MOCK_DOCKET_ANALYSIS: DocketAnalysis = {
       "Suggestions to minimize burden on respondents"
     ],
     deadline: "60 days from publication",
-    submissionMethod: "Electronic submission via regulations.gov"
+    submissionMethod: "Electronic submission via regulations.gov",
+    submissionEmail: "NONE",
+    onlineSubmission: true,
+    submissionMethodsDescription: "Comments may be submitted online at regulations.gov or by mail to U.S. Customs and Border Protection, Office of Trade, Regulations and Rulings, Attn: Trade and Border Security Division, 90 K Street NE, 10th Floor, Washington, DC 20229-1177."
   },
 
   positions: {

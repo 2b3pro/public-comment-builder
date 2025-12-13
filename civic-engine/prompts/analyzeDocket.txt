@@ -28,12 +28,27 @@ II. COMMENTING INSTRUCTIONS EXTRACTION
 ────────────────────────────────
 From the docket text, extract and present:
 • Deadline(s)
-• Submission method(s) - identify if email submission is accepted
-• Submission email address - if an email address is provided for submitting comments, extract it exactly as written
 • Required format or questions
 • Any explicit areas the agency requests comment on
 • Special frameworks referenced (e.g., PRA factors, cost-benefit criteria)
 • Open Status: Infer if the comment period is currently open based on the CURRENT DATE and any deadlines found in the text. Return true only if the deadline is in the future.
+
+**SUBMISSION METHOD EXTRACTION (CRITICAL):**
+Extract submission method information into three distinct fields:
+
+A) **submissionEmail**: If the agency requests or accepts comments by email, extract the exact email address.
+   - If NO email address is found or email submission is not mentioned, set to "NONE"
+   - Example: "comments@cbp.dhs.gov" or "NONE"
+
+B) **onlineSubmission**: Set to TRUE if the agency accepts online submission through regulations.gov or any similar federal portal.
+   - Most federal dockets accept online submission through regulations.gov
+   - Set to FALSE only if the text explicitly states online submission is NOT accepted
+
+C) **submissionMethodsDescription**: Write a clear, user-friendly sentence describing ALL methods the agency accepts for submitting comments.
+   - Include ALL methods mentioned: online portal, email, mail, fax, hand delivery, etc.
+   - Include specific addresses, emails, or portal URLs if mentioned
+   - This text will be displayed directly to users to guide their submission
+   - Example: "Comments may be submitted online at regulations.gov, by email to comments@agency.gov, or by mail to 1300 Pennsylvania Avenue NW, Washington, DC 20229."
 
 ────────────────────────────────
 III. ISSUE MAP (WHAT’S REALLY AT STAKE)

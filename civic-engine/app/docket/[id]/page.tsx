@@ -306,74 +306,77 @@ export default function DocketPage() {
           onBack={handleBack}
           onCopy={handleCopy}
           submissionEmail={analysis?.commentingInstructions.submissionEmail}
+          onlineSubmission={analysis?.commentingInstructions.onlineSubmission}
+          submissionMethodsDescription={analysis?.commentingInstructions.submissionMethodsDescription}
           docketId={docketId}
         />
 
         {/* Copy Success Modal */}
-        {showCopyModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-scale-up">
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="material-symbols-outlined text-2xl">check</span>
+        {showCopyModal && (() => {
+          const hasEmailSubmission = analysis?.commentingInstructions.submissionEmail &&
+            analysis.commentingInstructions.submissionEmail !== 'NONE';
+          const hasOnlineSubmission = analysis?.commentingInstructions.onlineSubmission !== false;
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+              <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-scale-up">
+                <div className="text-center mb-6">
+                  <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="material-symbols-outlined text-2xl">check</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Copied to Clipboard!</h3>
+                  <p className="text-sm text-gray-500">
+                    {hasEmailSubmission
+                      ? `Your comment is ready. This docket accepts comments via email to ${analysis?.commentingInstructions.submissionEmail}.`
+                      : hasOnlineSubmission
+                        ? 'Your comment is ready. Click below to open the official submission page on Regulations.gov and paste your text.'
+                        : 'Your comment is ready. Please submit through the appropriate channel.'
+                    }
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Copied to Clipboard!</h3>
-                <p className="text-sm text-gray-500">
-                  {analysis?.commentingInstructions.submissionEmail
-                    ? `Your comment is ready. This docket accepts comments via email to ${analysis.commentingInstructions.submissionEmail}.`
-                    : 'Your comment is ready. Click below to open the official submission page on Regulations.gov and paste your text.'
-                  }
-                </p>
-              </div>
 
-              <div className="space-y-3">
-                {/* Primary CTA: Email if available, otherwise Regulations.gov */}
-                {analysis?.commentingInstructions.submissionEmail ? (
-                  <a
-                    href={`mailto:${analysis.commentingInstructions.submissionEmail}?subject=${encodeURIComponent(`Public Comment: ${docketId}`)}&body=${encodeURIComponent(generatedDraft)}`}
-                    className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
-                    onClick={() => setShowCopyModal(false)}
-                  >
-                    <span className="material-symbols-outlined text-sm">mail</span>
-                    Send via Email
-                  </a>
-                ) : (
-                  <a
-                    href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
-                    onClick={() => setShowCopyModal(false)}
-                  >
-                    Go to Submission Page
-                    <span className="material-symbols-outlined text-sm">open_in_new</span>
-                  </a>
-                )}
+                <div className="space-y-3">
+                  {/* Primary CTA: Email if available */}
+                  {hasEmailSubmission && (
+                    <a
+                      href={`mailto:${analysis?.commentingInstructions.submissionEmail}?subject=${encodeURIComponent(`Public Comment: ${docketId}`)}&body=${encodeURIComponent(generatedDraft)}`}
+                      className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                      onClick={() => setShowCopyModal(false)}
+                    >
+                      <span className="material-symbols-outlined text-sm">mail</span>
+                      Send via Email
+                    </a>
+                  )}
 
-                {/* Secondary option: Show Regulations.gov link even when email is primary */}
-                {analysis?.commentingInstructions.submissionEmail && analysis?.openForComment && (
-                  <a
-                    href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors"
-                    onClick={() => setShowCopyModal(false)}
-                  >
-                    Or Submit Online
-                    <span className="material-symbols-outlined text-sm">open_in_new</span>
-                  </a>
-                )}
+                  {/* Online submission option */}
+                  {hasOnlineSubmission && (
+                    <a
+                      href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center justify-center gap-2 w-full font-bold py-3.5 px-4 rounded-xl transition-colors ${
+                        hasEmailSubmission
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30'
+                      }`}
+                      onClick={() => setShowCopyModal(false)}
+                    >
+                      {hasEmailSubmission ? 'Or Submit Online' : 'Go to Submission Page'}
+                      <span className="material-symbols-outlined text-sm">open_in_new</span>
+                    </a>
+                  )}
 
-                <button
-                  onClick={() => setShowCopyModal(false)}
-                  className="w-full py-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-                >
-                  Close
-                </button>
+                  <button
+                    onClick={() => setShowCopyModal(false)}
+                    className="w-full py-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </>
     );
   }
