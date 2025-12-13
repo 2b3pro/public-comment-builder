@@ -14,6 +14,7 @@ export interface DocketSummary {
   abstract?: string;
   submissionInstructions?: string; // Parsed or raw instructions
   openForComment?: boolean; // explicit flag from API
+  objectType: 'document' | 'docket'; // Type of record for correct Regulations.gov URL
 }
 
 export interface DocumentFullDetails extends DocketSummary {
@@ -57,6 +58,7 @@ export const regulationsApi = {
         subtype: doc.attributes.subtype,
         abstract: doc.attributes.abstract,
         openForComment: doc.attributes.openForComment,
+        objectType: 'document' as const,
       }));
       console.log(`[regulations-api] getDocumentsClosingRange: found ${results.length} documents`);
       return results;
@@ -95,6 +97,7 @@ export const regulationsApi = {
         subtype: doc.attributes.subtype,
         abstract: doc.attributes.abstract,
         openForComment: doc.attributes.openForComment,
+        objectType: 'document' as const,
       }));
       console.log(`[regulations-api] searchDocuments: found ${results.length} results`);
       return results;
@@ -139,6 +142,7 @@ export const regulationsApi = {
         abstract: attr.abstract,
         submissionInstructions: instructions,
         openForComment: attr.openForComment,
+        objectType: 'document' as const,
       };
     } catch (error) {
       if (isAxiosError(error)) {
@@ -194,6 +198,7 @@ export const regulationsApi = {
         frDocNum: attr.frDocNum,
         submissionInstructions: instructions,
         openForComment: attr.openForComment,
+        objectType: 'document' as const,
       };
     } catch (error) {
       if (isAxiosError(error)) {
@@ -228,6 +233,7 @@ export const regulationsApi = {
         subtype: attr.docketType,
         abstract: attr.docketAbstract,
         submissionInstructions: undefined,
+        objectType: 'docket' as const,
       };
     } catch (error) {
       if (isAxiosError(error)) {

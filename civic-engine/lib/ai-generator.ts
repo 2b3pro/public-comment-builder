@@ -220,6 +220,7 @@ export interface DocketAnalysis {
     mixed: PositionAnalysis;
   };
   openForComment?: boolean; // Live status from Regulations.gov
+  objectType?: 'document' | 'docket'; // Type for correct Regulations.gov URL
 }
 
 // Legacy type alias for backward compatibility

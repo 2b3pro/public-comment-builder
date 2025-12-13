@@ -46,21 +46,30 @@ import {
 // DOCKET TEXT FETCHING (Three-tier cache: Redis → SQLite → API)
 // ============================================================
 
+interface DocketTextResult {
+  text: string;
+  objectType: 'document' | 'docket';
+}
+
 /**
  * Fetch the full text content of a docket/document for AI analysis.
  * Uses a three-tier caching strategy:
  * 1. Redis (fast, volatile) - 7 day TTL
  * 2. SQLite (persistent, local) - 7 day TTL
  * 3. Regulations.gov API (source of truth)
+ *
+ * Also returns the objectType to construct correct Regulations.gov URLs.
  */
-async function getDocketText(docketId: string): Promise<string> {
+async function getDocketText(docketId: string): Promise<DocketTextResult> {
   const cacheKey = getDocketCacheKey(docketId);
+  const objectTypeCacheKey = `${cacheKey}:type`;
 
   // Tier 1: Check Redis cache (fastest)
   const redisCached = await getCached<string>(cacheKey);
+  const cachedType = await getCached<'document' | 'docket'>(objectTypeCacheKey);
   if (redisCached) {
     console.log(`[actions] getDocketText: Redis HIT for ${docketId}`);
-    return redisCached;
+    return { text: redisCached, objectType: cachedType || 'document' };
   }
 
   // Tier 2: Check SQLite cache (persistent)
@@ -69,7 +78,8 @@ async function getDocketText(docketId: string): Promise<string> {
     console.log(`[actions] getDocketText: SQLite HIT for ${docketId}, backfilling Redis`);
     // Backfill Redis for faster subsequent access
     await setCached(cacheKey, sqliteCached, CACHE_TTL.DOCKET);
-    return sqliteCached;
+    // Default to 'document' for cached items (most common from dashboard)
+    return { text: sqliteCached, objectType: cachedType || 'document' };
   }
 
   // Tier 3: Fetch from API (source of truth)
@@ -83,8 +93,9 @@ async function getDocketText(docketId: string): Promise<string> {
     console.log(`[actions] getDocketText: built text from document (${text.length} chars)`);
     // Store in both caches
     await setCached(cacheKey, text, CACHE_TTL.DOCKET);
+    await setCached(objectTypeCacheKey, 'document', CACHE_TTL.DOCKET);
     setDocketTextInDb(docketId, text);
-    return text;
+    return { text, objectType: 'document' };
   }
 
   // If not found as document, try as docket
@@ -103,14 +114,15 @@ async function getDocketText(docketId: string): Promise<string> {
     console.log(`[actions] getDocketText: built text from docket (${text.length} chars)`);
     // Store in both caches
     await setCached(cacheKey, text, CACHE_TTL.DOCKET);
+    await setCached(objectTypeCacheKey, 'docket', CACHE_TTL.DOCKET);
     setDocketTextInDb(docketId, text);
-    return text;
+    return { text, objectType: 'docket' };
   }
 
-  // Fallback if nothing found
+  // Fallback if nothing found - assume document type
   console.warn(`[actions] getDocketText: no data found for ${docketId}, using fallback`);
   const fallback = `Document ID: ${docketId}\n\nUnable to retrieve full docket content. Please refer to the Regulations.gov website for complete details.`;
-  return fallback;
+  return { text: fallback, objectType: 'document' };
 }
 
 // ============================================================
@@ -274,15 +286,15 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
   console.log(`[actions] performDocketAnalysis: MISS, calling AI for ${docketId}`);
 
   // Fetch docket text (also uses three-tier cache)
-  const docketText = await getDocketText(docketId);
-  console.log(`[actions] performDocketAnalysis: got docket text (${docketText.length} chars)`);
+  const { text: docketText, objectType } = await getDocketText(docketId);
+  console.log(`[actions] performDocketAnalysis: got docket text (${docketText.length} chars), type: ${objectType}`);
 
   // Call AI analyzer
   console.log(`[actions] performDocketAnalysis: calling AI analyzer`);
   const analysis = await analyzeDocket(docketText);
 
-  // Apply status
-  const result = applyOpenForCommentStatus(analysis, isOpenForComment);
+  // Apply status and objectType
+  const result = applyOpenForCommentStatus(analysis, isOpenForComment, objectType);
 
   // Store in both caches
   await setCached(cacheKey, result, CACHE_TTL.ANALYSIS);
@@ -293,18 +305,21 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
 }
 
 /**
- * Helper to merge openForComment status from API with cached/AI analysis.
+ * Helper to merge openForComment status and objectType from API with cached/AI analysis.
  * Open if EITHER API confirmed true OR AI inferred true.
  */
 function applyOpenForCommentStatus(
   analysis: DocketAnalysis,
-  apiStatus: boolean | undefined
+  apiStatus: boolean | undefined,
+  objectType?: 'document' | 'docket'
 ): DocketAnalysis {
   const apiSaysOpen = apiStatus === true;
   const aiSaysOpen = analysis.openForComment === true;
   return {
     ...analysis,
     openForComment: apiSaysOpen || aiSaysOpen,
+    // Preserve existing objectType if already set (from cache), otherwise use provided value
+    objectType: analysis.objectType || objectType || 'document',
   };
 }
 
@@ -320,7 +335,7 @@ export async function regenerateReasonCardAction(
 ): Promise<ReasonCard> {
   console.log(`[actions] regenerateReasonCardAction: position=${position}, topic=${cardTopic}`);
 
-  const docketText = await getDocketText(docketId);
+  const { text: docketText } = await getDocketText(docketId);
   const newCard = await regenerateReasonCard(docketText, position, cardTopic, existingArgumentLabels);
 
   console.log(`[actions] regenerateReasonCardAction: regeneration complete`);
@@ -352,7 +367,7 @@ export async function generateCommentDraft(
 ): Promise<string> {
   console.log(`[actions] generateCommentDraft: position=${position}, args=${selectedArguments.length}`);
 
-  const docketText = await getDocketText(docketId);
+  const { text: docketText } = await getDocketText(docketId);
 
   const comment = await generateFinalComment(
     docketText,

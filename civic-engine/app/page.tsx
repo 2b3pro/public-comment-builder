@@ -291,6 +291,7 @@ const MOCK_DOCKET_TODAY: DocketSummary = {
   commentEndDate: new Date().toISOString().split('T')[0],
   subtype: 'Proposed Rule',
   abstract: 'Guidance for industry on labeling.',
+  objectType: 'document',
 };
 
 const MOCK_DOCKET_3: DocketSummary = {
@@ -302,6 +303,7 @@ const MOCK_DOCKET_3: DocketSummary = {
   commentEndDate: '2026-02-09',
   subtype: 'Proposed Rule',
   abstract: 'Updates to ESTA collection including social media.',
+  objectType: 'document',
 };
 
 const MOCK_DOCKET_7: DocketSummary = {
@@ -313,4 +315,5 @@ const MOCK_DOCKET_7: DocketSummary = {
   commentEndDate: '2025-12-20',
   subtype: 'Proposed Rule',
   abstract: 'New standards for heavy duty trucks.',
+  objectType: 'document',
 };

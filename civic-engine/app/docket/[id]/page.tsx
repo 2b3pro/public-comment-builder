@@ -318,21 +318,50 @@ export default function DocketPage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Copied to Clipboard!</h3>
                 <p className="text-sm text-gray-500">
-                  Your comment is ready. Click below to open the official submission page on Regulations.gov and paste your text.
+                  {analysis?.commentingInstructions.submissionEmail
+                    ? `Your comment is ready. This docket accepts comments via email to ${analysis.commentingInstructions.submissionEmail}.`
+                    : 'Your comment is ready. Click below to open the official submission page on Regulations.gov and paste your text.'
+                  }
                 </p>
               </div>
 
               <div className="space-y-3">
-                <a
-                  href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
-                  onClick={() => setShowCopyModal(false)}
-                >
-                  Go to Submission Page
-                  <span className="material-symbols-outlined text-sm">open_in_new</span>
-                </a>
+                {/* Primary CTA: Email if available, otherwise Regulations.gov */}
+                {analysis?.commentingInstructions.submissionEmail ? (
+                  <a
+                    href={`mailto:${analysis.commentingInstructions.submissionEmail}?subject=${encodeURIComponent(`Public Comment: ${docketId}`)}&body=${encodeURIComponent(generatedDraft)}`}
+                    className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                    onClick={() => setShowCopyModal(false)}
+                  >
+                    <span className="material-symbols-outlined text-sm">mail</span>
+                    Send via Email
+                  </a>
+                ) : (
+                  <a
+                    href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                    onClick={() => setShowCopyModal(false)}
+                  >
+                    Go to Submission Page
+                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  </a>
+                )}
+
+                {/* Secondary option: Show Regulations.gov link even when email is primary */}
+                {analysis?.commentingInstructions.submissionEmail && analysis?.openForComment && (
+                  <a
+                    href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors"
+                    onClick={() => setShowCopyModal(false)}
+                  >
+                    Or Submit Online
+                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  </a>
+                )}
 
                 <button
                   onClick={() => setShowCopyModal(false)}
@@ -416,7 +445,7 @@ export default function DocketPage() {
                     {/* Link to original on Regulations.gov */}
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <a
-                        href={`https://www.regulations.gov/docket/${encodeURIComponent(docketId)}`}
+                        href={`https://www.regulations.gov/${analysis?.objectType || 'document'}/${encodeURIComponent(docketId)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
