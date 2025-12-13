@@ -39,6 +39,11 @@ async function loadPrompt(name: string, variables: Record<string, string> = {}):
 const LOG_DIR = join(process.cwd(), "logs");
 
 async function logAICall(name: string, prompt: string, response: string) {
+  // Only log to file in development
+  if (process.env.NODE_ENV !== 'development') {
+    return;
+  }
+
   try {
     await mkdir(LOG_DIR, { recursive: true });
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");

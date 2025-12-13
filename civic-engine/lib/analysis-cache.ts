@@ -34,6 +34,11 @@ function getDb(): Database.Database | null {
   if (db) return db;
   if (isDbFailed) return null;
 
+  // IMPORTANT: Only allow DB writing in local development
+  if (process.env.NODE_ENV !== 'development') {
+    return null;
+  }
+
   try {
     // Check if we are in a read-only environment
     if (!fs.existsSync(DATA_DIR)) {
