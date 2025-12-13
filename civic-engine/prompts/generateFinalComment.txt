@@ -74,4 +74,4 @@ FORMATTING & QUALITY REQUIREMENTS
   [Your Email]
 
 OUTPUT STANDARD:
-The comment should be complete, coherent, and ready for submission once the user inserts identifying details and any optional personal facts that strengthen credibility. Do not use markdown formatting, just plain text.
+The comment should be complete, coherent, and ready for submission once the user inserts identifying details and any optional personal facts that strengthen credibility. Do not use markdown or any other formatting, just plain unformatted text.
