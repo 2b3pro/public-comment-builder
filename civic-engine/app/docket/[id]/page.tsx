@@ -411,6 +411,7 @@ export default function DocketPage() {
                 analysis?.commentingInstructions.requiredPoints?.join('. ') ||
                 "Please refer to the official docket for submission instructions."
               }
+              documentUrl={`https://www.regulations.gov/${analysis?.objectType || 'document'}/${encodeURIComponent(docketId)}`}
             />
           </div>
 

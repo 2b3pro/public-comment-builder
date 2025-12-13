@@ -5,6 +5,7 @@ interface SubmissionGuidelinesProps {
   docketId: string;
   agencyName: string;
   instructions?: string;
+  documentUrl?: string;
   className?: string;
 }
 
@@ -12,6 +13,7 @@ export const SubmissionGuidelines: React.FC<SubmissionGuidelinesProps> = ({
   docketId,
   agencyName,
   instructions,
+  documentUrl,
   className
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +64,16 @@ export const SubmissionGuidelines: React.FC<SubmissionGuidelinesProps> = ({
                 {instructions.length > 300 ? (
                   <>
                     {instructions.slice(0, 300)}...
-                    <a href="#" className="text-primary hover:underline ml-1">Read full notice</a>
+                    {documentUrl && (
+                      <a
+                        href={documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline ml-1"
+                      >
+                        Read full notice
+                      </a>
+                    )}
                   </>
                 ) : instructions}
               </div>
