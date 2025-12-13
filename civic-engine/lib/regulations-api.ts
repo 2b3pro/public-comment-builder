@@ -13,6 +13,7 @@ export interface DocketSummary {
   subtype?: string;
   abstract?: string;
   submissionInstructions?: string; // Parsed or raw instructions
+  openForComment?: boolean; // explicit flag from API
 }
 
 export interface DocumentFullDetails extends DocketSummary {
@@ -55,6 +56,7 @@ export const regulationsApi = {
         commentEndDate: doc.attributes.commentEndDate,
         subtype: doc.attributes.subtype,
         abstract: doc.attributes.abstract,
+        openForComment: doc.attributes.openForComment,
       }));
       console.log(`[regulations-api] getDocumentsClosingRange: found ${results.length} documents`);
       return results;
@@ -92,6 +94,7 @@ export const regulationsApi = {
         commentEndDate: doc.attributes.commentEndDate,
         subtype: doc.attributes.subtype,
         abstract: doc.attributes.abstract,
+        openForComment: doc.attributes.openForComment,
       }));
       console.log(`[regulations-api] searchDocuments: found ${results.length} results`);
       return results;
@@ -120,7 +123,7 @@ export const regulationsApi = {
       console.log(`[regulations-api] getDocumentDetails: success for ${documentId}`);
 
       const attr = response.data.data.attributes;
-      
+
       // Attempt to find submission instructions in the content or abstract
       // In a real implementation, we might parse the HTML content if available
       const instructions = extractSubmissionInstructions(attr.content || attr.abstract);
@@ -135,16 +138,17 @@ export const regulationsApi = {
         subtype: attr.subtype,
         abstract: attr.abstract,
         submissionInstructions: instructions,
+        openForComment: attr.openForComment,
       };
     } catch (error) {
       if (isAxiosError(error)) {
         if (error.response?.status === 429) {
-           console.warn(`[regulations-api] getDocumentDetails: rate limited for ${documentId}`);
-           return null;
+          console.warn(`[regulations-api] getDocumentDetails: rate limited for ${documentId}`);
+          return null;
         }
         if (error.response?.status === 404) {
-           console.log(`[regulations-api] getDocumentDetails: 404 for ${documentId} (may be a docket ID)`);
-           return null;
+          console.log(`[regulations-api] getDocumentDetails: 404 for ${documentId} (may be a docket ID)`);
+          return null;
         }
       }
       console.error(`[regulations-api] getDocumentDetails: error for ${documentId}:`, error);
@@ -189,6 +193,7 @@ export const regulationsApi = {
         fileFormats,
         frDocNum: attr.frDocNum,
         submissionInstructions: instructions,
+        openForComment: attr.openForComment,
       };
     } catch (error) {
       if (isAxiosError(error)) {
@@ -218,11 +223,11 @@ export const regulationsApi = {
         id: response.data.data.id,
         title: attr.title,
         agencyId: attr.agencyId,
-        docketId: idOrDocketId(response.data.data.id), 
-        postedDate: attr.lastModifiedDate, 
+        docketId: idOrDocketId(response.data.data.id),
+        postedDate: attr.lastModifiedDate,
         subtype: attr.docketType,
-        abstract: attr.docketAbstract, 
-        submissionInstructions: undefined, 
+        abstract: attr.docketAbstract,
+        submissionInstructions: undefined,
       };
     } catch (error) {
       if (isAxiosError(error)) {

@@ -201,14 +201,33 @@ export async function refreshDockets(): Promise<DocketSummary[]> {
 export async function analyzeDocketContent(docketId: string): Promise<DocketAnalysis> {
   console.log(`[actions] analyzeDocketContent: docketId=${docketId}`);
 
-  // Check cache first
+  // 1. Fetch live metadata for "openForComment" status (always fresh or short cache)
+  // We prefer fresh status over cached analysis status
+  let isOpenForComment: boolean | undefined = undefined;
+  try {
+    const docMeta = await regulationsApi.getDocumentDetails(docketId);
+    if (docMeta) {
+      isOpenForComment = docMeta.openForComment;
+    }
+  } catch (err) {
+    console.warn(`[actions] analyzeDocketContent: failed to fetch live metadata`, err);
+  }
+
+  // 2. Check cache for analysis
   const cacheKey = getAnalysisCacheKey(docketId);
   const cached = await getCached<DocketAnalysis>(cacheKey);
+
   if (cached) {
     console.log(`[actions] analyzeDocketContent: Redis cache hit for ${docketId}`);
+    // Combine signals: Open if EITHER API confirmed true OR AI inferred true
+    // This catches cases where API is missing flag but text has valid future deadline
+    const apiSaysOpen = isOpenForComment === true;
+    const aiSaysOpen = cached.openForComment === true;
+    cached.openForComment = apiSaysOpen || aiSaysOpen;
     return cached;
   }
 
+  // 3. If no cache, perform full analysis
   // Fetch docket text
   const docketText = await getDocketText(docketId);
   console.log(`[actions] analyzeDocketContent: got docket text (${docketText.length} chars)`);
@@ -216,6 +235,11 @@ export async function analyzeDocketContent(docketId: string): Promise<DocketAnal
   // Call AI analyzer
   console.log(`[actions] analyzeDocketContent: calling AI analyzer`);
   const analysis = await analyzeDocket(docketText);
+
+  // Attach status
+  const apiSaysOpen = isOpenForComment === true;
+  const aiSaysOpen = analysis.openForComment === true;
+  analysis.openForComment = apiSaysOpen || aiSaysOpen;
 
   // Cache the analysis
   await setCached(cacheKey, analysis, CACHE_TTL.ANALYSIS);

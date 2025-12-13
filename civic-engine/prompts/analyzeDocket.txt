@@ -1,5 +1,7 @@
 Analyze the following federal regulatory docket and generate a citizen-facing analysis that enables the drafting of substantive, legally meaningful public comments.
 
+CURRENT DATE: {{currentDate}}
+
 DOCKET TEXT:
 {{docketText}}
 
@@ -31,6 +33,7 @@ From the docket text, extract and present:
 • Required format or questions
 • Any explicit areas the agency requests comment on
 • Special frameworks referenced (e.g., PRA factors, cost-benefit criteria)
+• Open Status: Infer if the comment period is currently open based on the CURRENT DATE and any deadlines found in the text. Return true only if the deadline is in the future.
 
 ────────────────────────────────
 III. ISSUE MAP (WHAT’S REALLY AT STAKE)

@@ -227,9 +227,18 @@ export default function DocketPage() {
     }
   };
 
+  const [showCopyModal, setShowCopyModal] = useState(false);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedDraft);
-    // Could add a toast notification here
+
+    // If open for comment, show the modal to guide them to the submission page
+    if (analysis?.openForComment) {
+      setShowCopyModal(true);
+    } else {
+      // Fallback relative toast/alert if not open or flag missing
+      alert("Comment copied to clipboard!");
+    }
   };
 
   // ============================================================
@@ -298,6 +307,43 @@ export default function DocketPage() {
           submissionEmail={analysis?.commentingInstructions.submissionEmail}
           docketId={docketId}
         />
+
+        {/* Copy Success Modal */}
+        {showCopyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-scale-up">
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="material-symbols-outlined text-2xl">check</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Copied to Clipboard!</h3>
+                <p className="text-sm text-gray-500">
+                  Your comment is ready. Click below to open the official submission page on Regulations.gov and paste your text.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <a
+                  href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-primary text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                  onClick={() => setShowCopyModal(false)}
+                >
+                  Go to Submission Page
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                </a>
+
+                <button
+                  onClick={() => setShowCopyModal(false)}
+                  className="w-full py-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -459,11 +505,10 @@ export default function DocketPage() {
                 <button
                   onClick={handleContinueToReasoning}
                   disabled={!selectedPosition}
-                  className={`w-full flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg transition-all ${
-                    !selectedPosition
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-primary hover:bg-blue-600 shadow-blue-500/30"
-                  }`}
+                  className={`w-full flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg transition-all ${!selectedPosition
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-primary hover:bg-blue-600 shadow-blue-500/30"
+                    }`}
                 >
                   <span className="material-symbols-outlined">arrow_forward</span>
                   Choose My Arguments
@@ -489,11 +534,10 @@ export default function DocketPage() {
                     Check the points that reflect your views
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  selectedPosition === 'support' ? 'bg-green-100 text-green-700' :
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedPosition === 'support' ? 'bg-green-100 text-green-700' :
                   selectedPosition === 'oppose' ? 'bg-red-100 text-red-700' :
-                  'bg-yellow-100 text-yellow-700'
-                }`}>
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
                   {selectedPosition}
                 </span>
               </div>

@@ -61,6 +61,7 @@ const docketAnalysisSchema: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
     summary: { type: SchemaType.STRING, description: "Plain-language 2-3 sentence summary" },
+    openForComment: { type: SchemaType.BOOLEAN, description: "True if comment period is open based on text deadlines and current date" },
     commentingInstructions: {
       type: SchemaType.OBJECT,
       properties: {
@@ -218,6 +219,7 @@ export interface DocketAnalysis {
     oppose: PositionAnalysis;
     mixed: PositionAnalysis;
   };
+  openForComment?: boolean; // Live status from Regulations.gov
 }
 
 // Legacy type alias for backward compatibility
@@ -498,7 +500,8 @@ export async function analyzeDocket(docketText: string): Promise<DocketAnalysis>
     }
   });
 
-  const prompt = await loadPrompt("analyzeDocket", { docketText });
+  const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const prompt = await loadPrompt("analyzeDocket", { docketText, currentDate });
 
   try {
     const result = await model.generateContent(prompt);
