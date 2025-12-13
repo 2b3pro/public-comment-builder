@@ -2,6 +2,8 @@
 
 Your project relies on a few keys and services to function fully.
 
+Project/Team for MCP: https://mcp.vercel.com/2b3/public-comment-builder
+
 ## 1. Environment Variables in Vercel
 Go to **Settings > Environment Variables** in your Vercel project and add:
 
@@ -20,3 +22,4 @@ This project uses SQLite for statistics (`data/stats.db`).
 ## 3. Caching (Redis)
 - **Without Redis:** The app will work but will fetch fresh data from Regulations.gov every time (slower, may hit rate limits).
 - **With Redis:** Add a Vercel KV store (or Upstash Redis) to your project. The app will automatically detect `KV_URL` and enable caching.
+

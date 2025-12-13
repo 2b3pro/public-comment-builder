@@ -205,18 +205,15 @@ export async function getDocument(id: string): Promise<DocketSummary | null> {
 }
 
 export async function refreshDockets(): Promise<DocketSummary[]> {
-  console.log(`[actions] refreshDockets: clearing cache and fetching fresh from API`);
-
-  // Delete the dashboard cache
-  const cacheKey = getDashboardCacheKey();
-  await deleteCached(cacheKey);
+  console.log(`[actions] refreshDockets: fetching fresh from API (cache will be updated)`);
 
   // Fetch fresh from API
   const results = await regulationsApi.getDocumentsClosingRange(7);
   console.log(`[actions] refreshDockets: got ${results.length} fresh results`);
 
-  // Cache the fresh results
+  // Cache the fresh results (overwrites existing cache)
   if (results.length > 0) {
+    const cacheKey = getDashboardCacheKey();
     await setCached(cacheKey, results, CACHE_TTL.DASHBOARD);
   }
 

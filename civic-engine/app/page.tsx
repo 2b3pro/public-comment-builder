@@ -86,47 +86,55 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
 
-    // Fetch fresh from API (bypasses cache)
-    const allDocs = await refreshDockets();
+    try {
+      // Start independent fetches in parallel
+      const trendingPromise = getTopRecentDockets(3);
 
-    // Dates for filtering
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+      // Wait for dockets first as filtering depends on it
+      const allDocs = await refreshDockets();
 
-    const in3Days = new Date();
-    in3Days.setDate(today.getDate() + 3);
-    const in3DaysStr = in3Days.toISOString().split('T')[0];
+      // Dates for filtering
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
 
-    // Filter buckets
-    const todayDocs = allDocs.filter(d => d.commentEndDate?.split('T')[0] === todayStr);
-    const threeDayDocs = allDocs.filter(d => {
-      const endDate = d.commentEndDate?.split('T')[0];
-      return endDate && endDate <= in3DaysStr && endDate > todayStr;
-    });
-    const sevenDayDocs = allDocs.filter(d => {
-      const endDate = d.commentEndDate?.split('T')[0];
-      return endDate && endDate > in3DaysStr;
-    });
+      const in3Days = new Date();
+      in3Days.setDate(today.getDate() + 3);
+      const in3DaysStr = in3Days.toISOString().split('T')[0];
 
-    // Apply mocks if empty
-    const finalToday = todayDocs.length ? todayDocs : [MOCK_DOCKET_TODAY];
-    const final3Days = threeDayDocs.length ? threeDayDocs : [MOCK_DOCKET_3];
-    const final7Days = sevenDayDocs.length ? sevenDayDocs : [MOCK_DOCKET_7];
+      // Filter buckets
+      const todayDocs = allDocs.filter(d => d.commentEndDate?.split('T')[0] === todayStr);
+      const threeDayDocs = allDocs.filter(d => {
+        const endDate = d.commentEndDate?.split('T')[0];
+        return endDate && endDate <= in3DaysStr && endDate > todayStr;
+      });
+      const sevenDayDocs = allDocs.filter(d => {
+        const endDate = d.commentEndDate?.split('T')[0];
+        return endDate && endDate > in3DaysStr;
+      });
 
-    setDueToday(finalToday);
-    setDue3Days(final3Days);
-    setDue7Days(final7Days);
+      // Apply mocks if empty
+      const finalToday = todayDocs.length ? todayDocs : [MOCK_DOCKET_TODAY];
+      const final3Days = threeDayDocs.length ? threeDayDocs : [MOCK_DOCKET_3];
+      const final7Days = sevenDayDocs.length ? sevenDayDocs : [MOCK_DOCKET_7];
 
-    // Fetch comment counts
-    const allDocketIds = [...finalToday, ...final3Days, ...final7Days].map(d => d.docketId);
-    const counts = await getDocketCommentCounts(allDocketIds);
-    setCommentCounts(counts);
+      setDueToday(finalToday);
+      setDue3Days(final3Days);
+      setDue7Days(final7Days);
 
-    // Fetch trending
-    const trending = await getTopRecentDockets(3);
-    setTrendingDockets(trending);
+      // Fetch comment counts
+      const allDocketIds = [...finalToday, ...final3Days, ...final7Days].map(d => d.docketId);
+      const countsPromise = getDocketCommentCounts(allDocketIds);
 
-    setIsRefreshing(false);
+      // Await remaining promises
+      const [counts, trending] = await Promise.all([countsPromise, trendingPromise]);
+
+      setCommentCounts(counts);
+      setTrendingDockets(trending);
+    } catch (error) {
+      console.error('Failed to refresh dockets:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
