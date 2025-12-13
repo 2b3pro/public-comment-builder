@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { DocketCard } from '@/components/DocketCard';
-import { getDashboardDockets, searchDockets, refreshDockets, getDocketCommentCounts, getTopRecentDockets, TrendingDocket } from '@/app/actions';
+import { getDashboardDockets, searchDockets, refreshDockets, getDocketCommentCounts, getTopRecentDockets, TrendingDocket, warmDocketCache } from '@/app/actions';
 import { DocketSummary } from '@/lib/regulations-api';
 
 export default function Dashboard() {
@@ -60,6 +60,13 @@ export default function Dashboard() {
     // Fetch top trending dockets (by comment count)
     const trending = await getTopRecentDockets(3);
     setTrendingDockets(trending);
+
+    // Background cache warming: pre-analyze top dockets so users get instant results
+    // Prioritize: today's dockets first, then 3-day, then 7-day
+    const prioritizedDockets = [...finalToday, ...final3Days, ...final7Days];
+    warmDocketCache(prioritizedDockets, 5).catch(err => {
+      console.warn('[Dashboard] Cache warming failed:', err);
+    });
   }, []);
 
   useEffect(() => {

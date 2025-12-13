@@ -5,8 +5,8 @@ DOCKET CONTEXT:
 {{docketText}}
 
 COMMENTING REQUIREMENTS (FROM THE DOCKET):
-• Format: {{format}}
-• Required issues or questions to address: {{requiredPoints}}
+- Format: {{format}}
+- Required issues or questions to address: {{requiredPoints}}
 
 COMMENTER POSITION:
 {{position}}  (support | oppose | mixed / conditional)
@@ -15,60 +15,62 @@ ARGUMENT MODULES TO INCORPORATE:
 {{selectedArguments}}
 
 COMMENTER CONTEXT (USE ONLY IF TRUE):
-• Subject-matter expertise: {{isExpert}}
-• Regulation directly affects livelihood or operations: {{affectsLivelihood}}
-• Additional personal or organizational context:
+- Subject-matter expertise: {{isExpert}}
+- Regulation directly affects livelihood or operations: {{affectsLivelihood}}
+- Additional personal or organizational context:
 {{customContext}}
 
 ────────────────────────────────
 STRUCTURE THE COMMENT USING FEDERAL BEST PRACTICES
 ────────────────────────────────
 
+- Add a header block with agency, docket number, and regulation title
+
 I. INTRODUCTION
-• Identify the agency, docket number, and regulation title
-• Explain why the commenter is submitting input on this rule
-• If applicable, briefly establish relevant experience, expertise, or lived experience
-• Clearly state the commenter’s overall position (support, oppose, or conditional)
+- Identify the agency, docket number, and regulation title
+- Explain why the commenter is submitting input on this rule
+- If applicable, briefly establish relevant experience, expertise, or lived experience
+- Clearly state the commenter’s overall position (support, oppose, or conditional)
 
 II. BACKGROUND & SCOPE (WHEN CONTEXT IS RELEVANT)
-• Identify the specific provisions, sections, or assumptions being addressed
-• If a subject-matter expert: concisely establish qualifications without overstatement
-• If livelihood or operations are affected: explain the direct, concrete connection
-• Keep this section factual and focused—no argument yet
+- Identify the specific provisions, sections, or assumptions being addressed
+- If a subject-matter expert: concisely establish qualifications without overstatement
+- If livelihood or operations are affected: explain the direct, concrete connection
+- Keep this section factual and focused—no argument yet
 
 III. SUBSTANTIVE ANALYSIS
 For EACH selected argument:
-• Cite or reference the relevant provision, estimate, model, or requirement in the proposed rule
-• Explain HOW the regulation affects real-world behavior, costs, risks, or outcomes
-• Assess whether the agency’s assumptions or analysis appear accurate, incomplete, or outdated
-• Identify unintended consequences, edge cases, or implementation risks the agency may have missed
-• Where applicable:
+- Cite or reference the relevant provision, estimate, model, or requirement in the proposed rule
+- Explain HOW the regulation affects real-world behavior, costs, risks, or outcomes
+- Assess whether the agency’s assumptions or analysis appear accurate, incomplete, or outdated
+- Identify unintended consequences, edge cases, or implementation risks the agency may have missed
+- Where applicable:
   – Describe supporting lived experience or operational realities
   – Address distributional impacts (who bears costs vs. who receives benefits)
   – Discuss impacts that are difficult to monetize (equity, dignity, privacy, fairness, access)
 
 IV. RECOMMENDATIONS
-• Provide specific, actionable recommendations tied directly to the analysis
-• Suggest:
+- Provide specific, actionable recommendations tied directly to the analysis
+- Suggest:
   – Revisions to language
   – Adjustments to thresholds, timelines, or definitions
   – Alternative regulatory approaches the agency could reasonably consider
-• Explain why each recommendation would better achieve the agency’s stated goals
+- Explain why each recommendation would better achieve the agency’s stated goals
 
 V. CONCLUSION
-• Briefly recap the main concerns or points of support
-• Restate key recommendations
-• Thank the agency for the opportunity to comment
-• Close respectfully, leaving placeholders for identifying information
+- Briefly recap the main concerns or points of support
+- Restate key recommendations
+- Thank the agency for the opportunity to comment
+- Close respectfully, leaving placeholders for identifying information
 
 ────────────────────────────────
 FORMATTING & QUALITY REQUIREMENTS
 ────────────────────────────────
-• Use formal, professional language appropriate for administrative rulemaking
-• Be precise, concrete, and evidence-oriented—avoid slogans or generalized opinions
-• Write with the expectation that the comment may be cited, summarized, or responded to in the final rule
-• Do not overstate certainty; qualify claims where appropriate
-• Leave placeholders for:
+- Use formal, professional language appropriate for administrative rulemaking
+- Be precise, concrete, and evidence-oriented—avoid slogans or generalized opinions
+- Write with the expectation that the comment may be cited, summarized, or responded to in the final rule
+- Do not overstate certainty; qualify claims where appropriate
+- Leave placeholders for:
   [Your Name]
   [Your Address]
   [Your Email]

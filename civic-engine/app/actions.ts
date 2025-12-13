@@ -33,26 +33,47 @@ import {
   getAdminStats as getDbAdminStats,
   AdminStats
 } from '@/lib/stats-db';
+import { deduplicatedRequest } from '@/lib/request-dedup';
+import {
+  getAnalysisFromDb,
+  setAnalysisInDb,
+  getDocketTextFromDb,
+  setDocketTextInDb,
+  getCachedDocketIds
+} from '@/lib/analysis-cache';
 
 // ============================================================
-// DOCKET TEXT FETCHING (with Redis caching)
+// DOCKET TEXT FETCHING (Three-tier cache: Redis → SQLite → API)
 // ============================================================
 
 /**
  * Fetch the full text content of a docket/document for AI analysis.
- * Uses Redis caching with 7-day TTL since docket content rarely changes.
+ * Uses a three-tier caching strategy:
+ * 1. Redis (fast, volatile) - 7 day TTL
+ * 2. SQLite (persistent, local) - 7 day TTL
+ * 3. Regulations.gov API (source of truth)
  */
 async function getDocketText(docketId: string): Promise<string> {
   const cacheKey = getDocketCacheKey(docketId);
 
-  // Check Redis cache first
-  const cached = await getCached<string>(cacheKey);
-  if (cached) {
-    console.log(`[actions] getDocketText: Redis cache hit for ${docketId}`);
-    return cached;
+  // Tier 1: Check Redis cache (fastest)
+  const redisCached = await getCached<string>(cacheKey);
+  if (redisCached) {
+    console.log(`[actions] getDocketText: Redis HIT for ${docketId}`);
+    return redisCached;
   }
 
-  console.log(`[actions] getDocketText: fetching from API for ${docketId}`);
+  // Tier 2: Check SQLite cache (persistent)
+  const sqliteCached = getDocketTextFromDb(docketId);
+  if (sqliteCached) {
+    console.log(`[actions] getDocketText: SQLite HIT for ${docketId}, backfilling Redis`);
+    // Backfill Redis for faster subsequent access
+    await setCached(cacheKey, sqliteCached, CACHE_TTL.DOCKET);
+    return sqliteCached;
+  }
+
+  // Tier 3: Fetch from API (source of truth)
+  console.log(`[actions] getDocketText: MISS, fetching from API for ${docketId}`);
 
   // Try fetching as a document first (most common case from dashboard)
   const docDetails = await regulationsApi.getDocumentFullDetails(docketId);
@@ -60,7 +81,9 @@ async function getDocketText(docketId: string): Promise<string> {
   if (docDetails) {
     const text = buildDocketTextForAnalysis(docDetails);
     console.log(`[actions] getDocketText: built text from document (${text.length} chars)`);
+    // Store in both caches
     await setCached(cacheKey, text, CACHE_TTL.DOCKET);
+    setDocketTextInDb(docketId, text);
     return text;
   }
 
@@ -78,7 +101,9 @@ async function getDocketText(docketId: string): Promise<string> {
     ].filter(Boolean).join('\n');
 
     console.log(`[actions] getDocketText: built text from docket (${text.length} chars)`);
+    // Store in both caches
     await setCached(cacheKey, text, CACHE_TTL.DOCKET);
+    setDocketTextInDb(docketId, text);
     return text;
   }
 
@@ -190,19 +215,32 @@ export async function refreshDockets(): Promise<DocketSummary[]> {
 }
 
 // ============================================================
-// NEW: UNIFIED DOCKET ANALYSIS (single AI call)
+// UNIFIED DOCKET ANALYSIS (with deduplication + three-tier cache)
 // ============================================================
 
 /**
  * Analyzes a docket and returns comprehensive analysis for all positions.
  * This is the FIRST AI call in the two-call architecture.
- * Uses Redis caching with 7-day TTL since analysis is expensive.
+ *
+ * Optimizations:
+ * 1. Promise coalescing - prevents duplicate AI calls for concurrent requests
+ * 2. Three-tier cache: Redis (fast) → SQLite (persistent) → AI (expensive)
  */
 export async function analyzeDocketContent(docketId: string): Promise<DocketAnalysis> {
   console.log(`[actions] analyzeDocketContent: docketId=${docketId}`);
 
-  // 1. Fetch live metadata for "openForComment" status (always fresh or short cache)
-  // We prefer fresh status over cached analysis status
+  // Use promise coalescing to prevent duplicate in-flight requests
+  return deduplicatedRequest(`analysis:${docketId}`, async () => {
+    return performDocketAnalysis(docketId);
+  });
+}
+
+/**
+ * Internal function that performs the actual analysis.
+ * Separated from analyzeDocketContent to work with promise coalescing.
+ */
+async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> {
+  // 1. Fetch live metadata for "openForComment" status (always fresh)
   let isOpenForComment: boolean | undefined = undefined;
   try {
     const docMeta = await regulationsApi.getDocumentDetails(docketId);
@@ -210,42 +248,64 @@ export async function analyzeDocketContent(docketId: string): Promise<DocketAnal
       isOpenForComment = docMeta.openForComment;
     }
   } catch (err) {
-    console.warn(`[actions] analyzeDocketContent: failed to fetch live metadata`, err);
+    console.warn(`[actions] performDocketAnalysis: failed to fetch live metadata`, err);
   }
 
-  // 2. Check cache for analysis
+  // 2. Tier 1: Check Redis cache (fastest)
   const cacheKey = getAnalysisCacheKey(docketId);
-  const cached = await getCached<DocketAnalysis>(cacheKey);
+  const redisCached = await getCached<DocketAnalysis>(cacheKey);
 
-  if (cached) {
-    console.log(`[actions] analyzeDocketContent: Redis cache hit for ${docketId}`);
-    // Combine signals: Open if EITHER API confirmed true OR AI inferred true
-    // This catches cases where API is missing flag but text has valid future deadline
-    const apiSaysOpen = isOpenForComment === true;
-    const aiSaysOpen = cached.openForComment === true;
-    cached.openForComment = apiSaysOpen || aiSaysOpen;
-    return cached;
+  if (redisCached) {
+    console.log(`[actions] performDocketAnalysis: Redis HIT for ${docketId}`);
+    return applyOpenForCommentStatus(redisCached, isOpenForComment);
   }
 
-  // 3. If no cache, perform full analysis
-  // Fetch docket text
+  // 3. Tier 2: Check SQLite cache (persistent)
+  const sqliteCached = getAnalysisFromDb(docketId);
+
+  if (sqliteCached) {
+    console.log(`[actions] performDocketAnalysis: SQLite HIT for ${docketId}, backfilling Redis`);
+    // Backfill Redis for faster subsequent access
+    await setCached(cacheKey, sqliteCached, CACHE_TTL.ANALYSIS);
+    return applyOpenForCommentStatus(sqliteCached, isOpenForComment);
+  }
+
+  // 4. Tier 3: Perform AI analysis (expensive)
+  console.log(`[actions] performDocketAnalysis: MISS, calling AI for ${docketId}`);
+
+  // Fetch docket text (also uses three-tier cache)
   const docketText = await getDocketText(docketId);
-  console.log(`[actions] analyzeDocketContent: got docket text (${docketText.length} chars)`);
+  console.log(`[actions] performDocketAnalysis: got docket text (${docketText.length} chars)`);
 
   // Call AI analyzer
-  console.log(`[actions] analyzeDocketContent: calling AI analyzer`);
+  console.log(`[actions] performDocketAnalysis: calling AI analyzer`);
   const analysis = await analyzeDocket(docketText);
 
-  // Attach status
-  const apiSaysOpen = isOpenForComment === true;
+  // Apply status
+  const result = applyOpenForCommentStatus(analysis, isOpenForComment);
+
+  // Store in both caches
+  await setCached(cacheKey, result, CACHE_TTL.ANALYSIS);
+  setAnalysisInDb(docketId, result, docketText);
+
+  console.log(`[actions] performDocketAnalysis: analysis complete and cached`);
+  return result;
+}
+
+/**
+ * Helper to merge openForComment status from API with cached/AI analysis.
+ * Open if EITHER API confirmed true OR AI inferred true.
+ */
+function applyOpenForCommentStatus(
+  analysis: DocketAnalysis,
+  apiStatus: boolean | undefined
+): DocketAnalysis {
+  const apiSaysOpen = apiStatus === true;
   const aiSaysOpen = analysis.openForComment === true;
-  analysis.openForComment = apiSaysOpen || aiSaysOpen;
-
-  // Cache the analysis
-  await setCached(cacheKey, analysis, CACHE_TTL.ANALYSIS);
-
-  console.log(`[actions] analyzeDocketContent: analysis complete and cached`);
-  return analysis;
+  return {
+    ...analysis,
+    openForComment: apiSaysOpen || aiSaysOpen,
+  };
 }
 
 /**
@@ -399,6 +459,92 @@ export async function getAdminStats(secretKey: string): Promise<AdminStats | nul
     console.error('[actions] getAdminStats: error', err);
     return null;
   }
+}
+
+// ============================================================
+// BACKGROUND CACHE WARMING
+// ============================================================
+
+export interface CacheWarmingResult {
+  total: number;
+  warmed: number;
+  skipped: number;
+  failed: number;
+  docketIds: string[];
+}
+
+/**
+ * Warm the cache for dashboard dockets in the background.
+ * Called after dashboard loads to pre-analyze top dockets so users
+ * clicking through get instant results.
+ *
+ * @param dockets List of docket summaries from dashboard
+ * @param maxToWarm Maximum number of dockets to warm (default: 5)
+ */
+export async function warmDocketCache(
+  dockets: DocketSummary[],
+  maxToWarm: number = 5
+): Promise<CacheWarmingResult> {
+  console.log(`[actions] warmDocketCache: starting for ${dockets.length} dockets (max: ${maxToWarm})`);
+
+  const result: CacheWarmingResult = {
+    total: dockets.length,
+    warmed: 0,
+    skipped: 0,
+    failed: 0,
+    docketIds: [],
+  };
+
+  // Get already-cached docket IDs from SQLite
+  const alreadyCached = new Set(getCachedDocketIds());
+  console.log(`[actions] warmDocketCache: ${alreadyCached.size} dockets already cached`);
+
+  // Filter to dockets that need warming
+  const needsWarming = dockets
+    .filter(d => !alreadyCached.has(d.id))
+    .slice(0, maxToWarm);
+
+  if (needsWarming.length === 0) {
+    console.log(`[actions] warmDocketCache: all dockets already cached, skipping`);
+    result.skipped = Math.min(dockets.length, maxToWarm);
+    return result;
+  }
+
+  console.log(`[actions] warmDocketCache: warming ${needsWarming.length} dockets`);
+
+  // Warm each docket sequentially to avoid overwhelming the AI API
+  for (const docket of needsWarming) {
+    try {
+      console.log(`[actions] warmDocketCache: warming ${docket.id}`);
+      await analyzeDocketContent(docket.id);
+      result.warmed++;
+      result.docketIds.push(docket.id);
+    } catch (err) {
+      console.error(`[actions] warmDocketCache: failed to warm ${docket.id}`, err);
+      result.failed++;
+    }
+  }
+
+  // Count skipped (already cached within the maxToWarm limit)
+  result.skipped = Math.min(dockets.length, maxToWarm) - needsWarming.length;
+
+  console.log(`[actions] warmDocketCache: complete - warmed: ${result.warmed}, skipped: ${result.skipped}, failed: ${result.failed}`);
+  return result;
+}
+
+/**
+ * Check which dockets from a list are already cached.
+ * Useful for UI to show cache status indicators.
+ */
+export async function getDocketCacheStatus(docketIds: string[]): Promise<Record<string, boolean>> {
+  const cachedSet = new Set(getCachedDocketIds());
+  const status: Record<string, boolean> = {};
+
+  for (const id of docketIds) {
+    status[id] = cachedSet.has(id);
+  }
+
+  return status;
 }
 
 // ============================================================
