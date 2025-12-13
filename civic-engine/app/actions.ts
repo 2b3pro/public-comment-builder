@@ -1,6 +1,6 @@
 'use server';
 
-import { regulationsApi, DocketSummary, buildDocketTextForAnalysis } from '@/lib/regulations-api';
+import { regulationsApi, DocketSummary, buildDocketTextForAnalysis, fetchFederalRegisterContent } from '@/lib/regulations-api';
 import {
   analyzeDocket,
   regenerateReasonCard,
@@ -90,7 +90,28 @@ async function getDocketText(docketId: string): Promise<DocketTextResult> {
   const docDetails = await regulationsApi.getDocumentFullDetails(docketId);
 
   if (docDetails) {
-    const text = buildDocketTextForAnalysis(docDetails);
+    let text = buildDocketTextForAnalysis(docDetails);
+
+    // If content is sparse (< 500 chars) and we have a FR doc number, fetch from Federal Register
+    if (text.length < 500 && docDetails.frDocNum) {
+      console.log(`[actions] getDocketText: sparse content (${text.length} chars), trying Federal Register fallback`);
+      const frContent = await fetchFederalRegisterContent(docDetails.frDocNum);
+      if (frContent && frContent.length > text.length) {
+        // Prepend metadata and use Federal Register content
+        text = [
+          `DOCUMENT ID: ${docDetails.id}`,
+          `TITLE: ${docDetails.title}`,
+          `AGENCY: ${docDetails.agencyId}`,
+          docDetails.commentEndDate ? `COMMENT DEADLINE: ${docDetails.commentEndDate}` : '',
+          `FEDERAL REGISTER DOCUMENT: ${docDetails.frDocNum}`,
+          '',
+          'FULL TEXT (from Federal Register):',
+          frContent,
+        ].filter(Boolean).join('\n');
+        console.log(`[actions] getDocketText: enriched with Federal Register content (${text.length} chars)`);
+      }
+    }
+
     console.log(`[actions] getDocketText: built text from document (${text.length} chars)`);
     // Store in both caches
     await setCached(cacheKey, text, CACHE_TTL.DOCKET);
@@ -331,9 +352,14 @@ function applyOpenForCommentStatus(
 export async function forceReanalyzeDocket(docketId: string): Promise<DocketAnalysis> {
   console.log(`[actions] forceReanalyzeDocket: clearing caches for ${docketId}`);
 
-  // Clear Redis cache
-  const cacheKey = getAnalysisCacheKey(docketId);
-  await deleteCached(cacheKey);
+  // Clear Redis analysis cache
+  const analysisCacheKey = getAnalysisCacheKey(docketId);
+  await deleteCached(analysisCacheKey);
+
+  // Clear Redis docket text cache (to re-fetch with Federal Register fallback)
+  const docketCacheKey = getDocketCacheKey(docketId);
+  await deleteCached(docketCacheKey);
+  await deleteCached(`${docketCacheKey}:type`);
 
   // Clear SQLite cache
   deleteAnalysisFromDb(docketId);

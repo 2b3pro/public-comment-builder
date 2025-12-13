@@ -331,3 +331,69 @@ function extractSubmissionInstructions(text?: string): string | undefined {
 
   return undefined;
 }
+
+// ============================================================
+// FEDERAL REGISTER API FALLBACK
+// ============================================================
+
+/**
+ * Decode Cloudflare email protection.
+ * Federal Register HTML uses data-cfemail to obfuscate email addresses.
+ */
+function decodeCfEmail(encodedString: string): string {
+  let email = '';
+  const r = parseInt(encodedString.substr(0, 2), 16);
+  for (let n = 2; encodedString.length - n; n += 2) {
+    const i = parseInt(encodedString.substr(n, 2), 16) ^ r;
+    email += String.fromCharCode(i);
+  }
+  return email;
+}
+
+/**
+ * Process Federal Register HTML to decode obfuscated emails.
+ */
+function processFederalRegisterHtml(html: string): string {
+  // Decode Cloudflare protected emails
+  return html.replace(
+    /<a[^>]*data-cfemail="([^"]+)"[^>]*>\[email[^<]*\]<\/a>/gi,
+    (_, encoded) => decodeCfEmail(encoded)
+  ).replace(
+    /<span[^>]*data-cfemail="([^"]+)"[^>]*>\[email[^<]*\]<\/span>/gi,
+    (_, encoded) => decodeCfEmail(encoded)
+  );
+}
+
+/**
+ * Fetch document content from Federal Register API.
+ * Used as fallback when Regulations.gov content is empty.
+ */
+export async function fetchFederalRegisterContent(frDocNum: string): Promise<string | null> {
+  console.log(`[regulations-api] fetchFederalRegisterContent: fetching ${frDocNum}`);
+  try {
+    // First get the document metadata to find the raw text URL
+    const metaResponse = await axios.get(`https://www.federalregister.gov/api/v1/documents/${frDocNum}.json`);
+    const rawTextUrl = metaResponse.data.raw_text_url;
+
+    if (!rawTextUrl) {
+      console.log(`[regulations-api] fetchFederalRegisterContent: no raw_text_url for ${frDocNum}`);
+      return null;
+    }
+
+    // Fetch the raw text/HTML content
+    const contentResponse = await axios.get(rawTextUrl);
+    let content = contentResponse.data;
+
+    // Process to decode obfuscated emails
+    content = processFederalRegisterHtml(content);
+
+    // Strip HTML tags for cleaner text
+    content = stripHtml(content);
+
+    console.log(`[regulations-api] fetchFederalRegisterContent: got ${content.length} chars for ${frDocNum}`);
+    return content;
+  } catch (error) {
+    console.error(`[regulations-api] fetchFederalRegisterContent: error for ${frDocNum}:`, error);
+    return null;
+  }
+}
