@@ -81,7 +81,10 @@ async function fetchDocketText(doc: { documentId?: string; docketId: string }): 
   try {
     // Try to get detailed document info
     if (doc.documentId) {
-      const details = await regulationsApi.getDocumentDetails(doc.documentId);
+      const details = await regulationsApi.getDocumentFullDetails(doc.documentId);
+      if (!details) {
+        return `Docket: ${doc.docketId}`;
+      }
       let text = buildDocketTextForAnalysis(details);
 
       // If content is sparse, try Federal Register
