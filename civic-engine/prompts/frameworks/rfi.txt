@@ -1,0 +1,27 @@
+**IF noticeType = "rfi":**
+Generate question-based response cards. DO NOT generate support/oppose positions.
+
+First, extract the specific questions the agency is asking (look for numbered questions, bullet points asking for input, or sections titled "Questions for Comment").
+
+**CRITICAL: ARGUMENTS-FIRST APPROACH**
+For EACH question, follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 4–8 specific response points for this question
+• Each should offer substantive input the agency can act upon
+
+STEP B - Cluster Into Categories:
+• Group response points into 2–3 response cards per question
+• Each response card MUST have at least 2 arguments
+• Do NOT create response cards with only 1 argument
+
+Then generate `rfiQuestions` array where each item represents a question with:
+- questionNumber (the original number, or 1, 2, 3 if unnumbered)
+- questionText (the agency's actual question, paraphrased if very long)
+- responseCards (array of response options for this question)
+
+Each response card has:
+- id (e.g., "rfi-q1-1")
+- topic (short response angle)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion}) — minimum 2 per card

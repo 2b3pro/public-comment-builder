@@ -1,0 +1,20 @@
+**IF noticeType = "general":**
+Generate issue-based response cards without position framing.
+
+**STRUCTURE: 3–4 ISSUE CARDS TOTAL**
+Follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 8–12 specific response points relevant to the notice
+• Each should offer substantive, actionable input
+
+STEP B - Cluster Into Categories:
+• Group arguments into 3–4 issue cards (no more than 4)
+• Each issue card MUST have at least 2 arguments (preferably 3–4)
+• If an argument would be alone, merge it with a related card
+
+Generate `issueCards` array of general response angles:
+- id (e.g., "gen-impl-1")
+- topic (the issue being addressed)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion}) — 2–4 per card

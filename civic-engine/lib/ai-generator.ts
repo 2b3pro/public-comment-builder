@@ -9,15 +9,48 @@ const API_KEY = process.env.GEMINI_API_KEY;
 // ============================================================
 
 const PROMPTS_DIR = join(process.cwd(), "prompts");
+const FRAMEWORKS_DIR = join(PROMPTS_DIR, "frameworks");
+
+/**
+ * Load all response framework files and concatenate them.
+ * Used for the {{responseFrameworks}} variable in analyzeDocket prompt.
+ */
+async function loadResponseFrameworks(): Promise<string> {
+  const frameworkFiles = [
+    "proposed-rule.txt",
+    "pra-notice.txt",
+    "rfi.txt",
+    "general.txt"
+  ];
+
+  const frameworks: string[] = [];
+  for (const file of frameworkFiles) {
+    try {
+      const content = await readFile(join(FRAMEWORKS_DIR, file), "utf-8");
+      frameworks.push(content.trim());
+    } catch (err) {
+      console.error(`[ai-generator] Failed to load framework ${file}:`, err);
+    }
+  }
+
+  return frameworks.join("\n\n──────────────────────────────────────────────────────────────────\n\n");
+}
 
 /**
  * Load a prompt template from the prompts/ directory.
  * Templates use {{variableName}} syntax for substitution.
+ * Special handling for {{responseFrameworks}} which loads from frameworks/ subdirectory.
  */
 async function loadPrompt(name: string, variables: Record<string, string> = {}): Promise<string> {
   const filePath = join(PROMPTS_DIR, `${name}.txt`);
   try {
     let template = await readFile(filePath, "utf-8");
+
+    // Handle special {{responseFrameworks}} variable
+    if (template.includes("{{responseFrameworks}}")) {
+      const frameworks = await loadResponseFrameworks();
+      template = template.replace(/\{\{responseFrameworks\}\}/g, frameworks);
+    }
 
     // Substitute variables: {{variableName}} -> value
     for (const [key, value] of Object.entries(variables)) {

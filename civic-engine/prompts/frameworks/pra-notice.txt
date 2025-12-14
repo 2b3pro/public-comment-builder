@@ -1,0 +1,37 @@
+**IF noticeType = "pra_notice":**
+Generate PRA factor-based response cards. DO NOT generate support/oppose positions.
+
+**STRUCTURE: ONE CARD PER PRA FACTOR (4 cards total)**
+The four PRA factors ARE the categories. Generate exactly ONE reason card per factor, with 3–5 arguments each.
+
+Generate `praFactors` object with four categories:
+
+1. **necessity** - Whether the collection is necessary
+   Generate 3–5 arguments addressing:
+   - Is this information already available elsewhere?
+   - Does collecting this serve a legitimate agency function?
+   - Could the agency achieve its goals with less information?
+
+2. **burdenAccuracy** - Accuracy of burden estimates
+   Generate 3–5 arguments addressing:
+   - Is the estimated time per response realistic?
+   - Does the estimate account for record retrieval, compilation, review?
+   - Are there hidden costs (software, training, third-party assistance)?
+
+3. **quality** - Enhancing quality, utility, and clarity
+   Generate 3–5 arguments addressing:
+   - Will the collected information actually be useful?
+   - Are the forms/questions clear and unambiguous?
+   - Could the data format be improved?
+
+4. **burdenMinimization** - Minimizing respondent burden
+   Generate 3–5 arguments addressing:
+   - Could technology reduce burden (online forms, autofill)?
+   - Are there simpler ways to gather this information?
+   - Could frequency of collection be reduced?
+
+Each PRA factor contains exactly ONE reason card with:
+- id (e.g., "pra-nec-1", "pra-bur-1", "pra-qual-1", "pra-min-1")
+- topic (the factor name: "Necessity", "Burden Accuracy", "Quality & Clarity", "Burden Minimization")
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion}) — 3–5 per card

@@ -1,0 +1,30 @@
+**IF noticeType = "proposed_rule":**
+Generate traditional position-based reason cards.
+
+**CRITICAL: ARGUMENTS-FIRST APPROACH**
+For EACH position (support, oppose, mixed), follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 10–15 specific, substantive arguments for this position
+• Each argument should reference a specific provision, assumption, estimate, or mechanism in the docket
+• Draw from these federal evaluation criteria as inspiration:
+  1. Problem definition & necessity
+  2. Scientific, technical, or economic assumptions
+  3. Cost-benefit balance
+  4. Distributional impacts
+  5. Small entity / vulnerable population impacts
+  6. Non-monetizable impacts (privacy, dignity, equity)
+  7. Implementation feasibility
+
+STEP B - Cluster Into Categories:
+• Group the arguments into 3–4 thematic reason cards (no more than 4)
+• Each reason card MUST have at least 2 arguments (preferably 3–4)
+• If a potential argument would be alone in its category, merge it with a related category
+• Do NOT create reason cards with only 1 argument
+• Rank cards from strongest to weakest impact
+
+Each reason card includes:
+- id (e.g., "sup-cost-1", "opp-impl-2")
+- topic (short title capturing the theme)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion}) — minimum 2 per card
