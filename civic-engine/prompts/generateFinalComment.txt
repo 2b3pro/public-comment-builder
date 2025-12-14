@@ -182,12 +182,12 @@ This summary will be extracted and used for social media sharing ("Amplify Your 
 
 Format:
 <summary>
-I submitted a public comment on [brief description of the regulation/notice] using the Public Comment Builder. [1-2 sentences explaining what you advocated for or raised concerns about]. The comment period closes [deadline if known]. You can submit your own comment at regulations.gov.
+I submitted a public comment on [brief description of the regulation/notice]. [1-2 sentences explaining what you advocated for or raised concerns about]. Draft your comments at public-comment-builder.vercel.app
 </summary>
 
 Requirements:
-- Keep it under 280 characters if possible (Twitter-friendly)
+- Keep it under 200 characters (the app will append the page link automatically)
 - Write in first person ("I submitted...")
 - Be specific about the topic but accessible to general audiences
-- Include a call-to-action encouraging others to comment
+- End with "Draft your comments at public-comment-builder.vercel.app" as the call-to-action
 - Do NOT include the <summary> tags in the main comment body—place them only at the very end

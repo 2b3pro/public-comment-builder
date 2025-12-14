@@ -820,7 +820,7 @@ Respectfully submitted,
     ? 'a federal request for information'
     : 'a proposed federal regulation';
 
-  comment += `\n\n<summary>I submitted a public comment on ${topicDescription}. I raised ${selectedArguments.length} substantive points for the agency to consider. Add your voice at regulations.gov.</summary>`;
+  comment += `\n\n<summary>I submitted a public comment on ${topicDescription}. I raised ${selectedArguments.length} substantive points for the agency to consider. Draft your comments at public-comment-builder.vercel.app</summary>`;
 
   return comment;
 }
