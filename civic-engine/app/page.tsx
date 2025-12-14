@@ -31,17 +31,21 @@ export default function Dashboard() {
     in3Days.setDate(today.getDate() + 3);
     const in3DaysStr = in3Days.toISOString().split('T')[0];
 
-    // Filter buckets
+    // Filter buckets - extract date portion since API returns full ISO timestamps
     // 1. Due Today
-    const todayDocs = allDocs.filter(d => d.commentEndDate === todayStr);
+    const todayDocs = allDocs.filter(d => d.commentEndDate?.split('T')[0] === todayStr);
 
-    // 2. Due in <= 3 Days (excluding today to avoid dupe visual if desired, or inclusive)
-    // Let's make it inclusive for "Upcoming" list or exclusive?
-    // Usually "Closing in 3 Days" implies a window. Let's just show next 3 days.
-    const threeDayDocs = allDocs.filter(d => d.commentEndDate && d.commentEndDate <= in3DaysStr && d.commentEndDate > todayStr);
+    // 2. Due in <= 3 Days (excluding today)
+    const threeDayDocs = allDocs.filter(d => {
+      const endDate = d.commentEndDate?.split('T')[0];
+      return endDate && endDate <= in3DaysStr && endDate > todayStr;
+    });
 
     // 3. Due in <= 7 Days (rest of week)
-    const sevenDayDocs = allDocs.filter(d => d.commentEndDate && d.commentEndDate > in3DaysStr);
+    const sevenDayDocs = allDocs.filter(d => {
+      const endDate = d.commentEndDate?.split('T')[0];
+      return endDate && endDate > in3DaysStr;
+    });
 
     // Apply Mocks if empty (for demo robustness)
     const finalToday = todayDocs.length ? todayDocs : [MOCK_DOCKET_TODAY];
