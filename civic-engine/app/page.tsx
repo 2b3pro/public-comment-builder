@@ -210,23 +210,28 @@ export default function Dashboard() {
 
         {/* Trending Dockets - Most Commented */}
         {!searchResults.length && trendingDockets.length > 0 && (
-          <section className="animate-fade-in">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-purple-500">trending_up</span>
-              Trending — Most Commented
-            </h2>
+          <details className="animate-fade-in group" open>
+            <summary className="list-none cursor-pointer">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-purple-500">trending_up</span>
+                Trending — Most Commented ({trendingDockets.length})
+                <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
+                  expand_more
+                </span>
+              </h2>
+            </summary>
             <div className="space-y-3">
               {trendingDockets.map((docket, idx) => (
                 <Link
                   key={docket.docketId}
                   href={`/docket/${encodeURIComponent(docket.docketId)}`}
-                  className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-primary/30 transition-all group"
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-primary/30 transition-all group/card"
                 >
                   <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-600 rounded-lg font-bold text-sm">
                     #{idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
+                    <p className="text-sm font-bold text-gray-900 truncate group-hover/card:text-primary transition-colors">
                       {docket.docketTitle || docket.docketId}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -240,7 +245,7 @@ export default function Dashboard() {
                 </Link>
               ))}
             </div>
-          </section>
+          </details>
         )}
 
         {/* Refresh Control */}
@@ -263,42 +268,57 @@ export default function Dashboard() {
 
         {/* Due Today */}
         {!searchResults.length && (
-          <section className="animate-slide-up">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-red-600">alarm</span>
-              Closing Today ({dueToday.length})
-            </h2>
+          <details className="animate-slide-up group" open>
+            <summary className="list-none cursor-pointer">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-red-600">alarm</span>
+                Closing Today ({dueToday.length})
+                <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
+                  expand_more
+                </span>
+              </h2>
+            </summary>
             <div className="space-y-4">
               {dueToday.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
               {dueToday.length === 0 && <p className="text-sm text-gray-500 italic">No major dockets closing today.</p>}
             </div>
-          </section>
+          </details>
         )}
 
         {/* Due in 3 Days */}
         {!searchResults.length && (
-          <section className="animate-slide-up delay-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-orange-500">upcoming</span>
-              Closing in 3 Days ({due3Days.length})
-            </h2>
+          <details className="animate-slide-up delay-100 group" open>
+            <summary className="list-none cursor-pointer">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-orange-500">upcoming</span>
+                Closing in 3 Days ({due3Days.length})
+                <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
+                  expand_more
+                </span>
+              </h2>
+            </summary>
             <div className="space-y-4">
               {due3Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
             </div>
-          </section>
+          </details>
         )}
 
         {/* Featured / Week */}
         {!searchResults.length && (
-          <section className="animate-slide-up delay-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-blue-500">calendar_month</span>
-              Closing This Week ({due7Days.length})
-            </h2>
+          <details className="animate-slide-up delay-200 group" open>
+            <summary className="list-none cursor-pointer">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-500">calendar_month</span>
+                Closing This Week ({due7Days.length})
+                <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
+                  expand_more
+                </span>
+              </h2>
+            </summary>
             <div className="space-y-4">
               {due7Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
             </div>
-          </section>
+          </details>
         )}
       </main>
     </div>
