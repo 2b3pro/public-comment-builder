@@ -390,7 +390,9 @@ export default function DocketPage() {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(generatedDraft);
+    // Strip the <summary> block before copying (user shouldn't paste that)
+    const cleanComment = generatedDraft.replace(/<summary>[\s\S]*?<\/summary>/, '').trim();
+    navigator.clipboard.writeText(cleanComment);
 
     // If open for comment, show the modal to guide them to the submission page
     if (analysis?.openForComment) {

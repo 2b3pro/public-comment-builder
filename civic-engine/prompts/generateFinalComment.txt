@@ -163,8 +163,15 @@ FORMATTING & QUALITY REQUIREMENTS
   [Your Address]
   [Your Email]
 
+**CRITICAL: PLAIN TEXT ONLY**
+- Do NOT use any markdown formatting (no **, ##, *, -, bullets, etc.)
+- Do NOT use code blocks, backticks, or any special formatting
+- Use plain uppercase text for section headers (e.g., "INTRODUCTION" not "## Introduction")
+- Use plain numbered lists (1. 2. 3.) not markdown bullets
+- Output must be ready to paste directly into regulations.gov or an email
+
 OUTPUT STANDARD:
-The comment should be complete, coherent, and ready for submission once the user inserts identifying details and any optional personal facts that strengthen credibility. Do not use markdown or any other formatting, just plain unformatted text.
+The comment should be complete, coherent, and ready for submission once the user inserts identifying details and any optional personal facts that strengthen credibility. Plain text only—no markdown, no special formatting.
 
 ════════════════════════════════════════════════════════════════════
 SOCIAL SHARING SUMMARY (REQUIRED)
@@ -175,7 +182,7 @@ This summary will be extracted and used for social media sharing ("Amplify Your 
 
 Format:
 <summary>
-I submitted a public comment on [brief description of the regulation/notice]. [1-2 sentences explaining what you advocated for or raised concerns about]. The comment period closes [deadline if known]. You can submit your own comment at regulations.gov.
+I submitted a public comment on [brief description of the regulation/notice] using the Public Comment Builder. [1-2 sentences explaining what you advocated for or raised concerns about]. The comment period closes [deadline if known]. You can submit your own comment at regulations.gov.
 </summary>
 
 Requirements:
