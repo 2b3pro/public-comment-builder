@@ -813,6 +813,15 @@ Respectfully submitted,
 [Your Address]
 [Your Email]`;
 
+  // Add social sharing summary
+  const topicDescription = noticeType === 'pra_notice'
+    ? 'a federal information collection request'
+    : noticeType === 'rfi'
+    ? 'a federal request for information'
+    : 'a proposed federal regulation';
+
+  comment += `\n\n<summary>I submitted a public comment on ${topicDescription}. I raised ${selectedArguments.length} substantive points for the agency to consider. Add your voice at regulations.gov.</summary>`;
+
   return comment;
 }
 

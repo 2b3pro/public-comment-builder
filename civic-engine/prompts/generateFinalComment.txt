@@ -165,3 +165,22 @@ FORMATTING & QUALITY REQUIREMENTS
 
 OUTPUT STANDARD:
 The comment should be complete, coherent, and ready for submission once the user inserts identifying details and any optional personal facts that strengthen credibility. Do not use markdown or any other formatting, just plain unformatted text.
+
+════════════════════════════════════════════════════════════════════
+SOCIAL SHARING SUMMARY (REQUIRED)
+════════════════════════════════════════════════════════════════════
+After the main comment, add a concise summary wrapped in <summary></summary> tags.
+
+This summary will be extracted and used for social media sharing ("Amplify Your Impact").
+
+Format:
+<summary>
+I submitted a public comment on [brief description of the regulation/notice]. [1-2 sentences explaining what you advocated for or raised concerns about]. The comment period closes [deadline if known]. You can submit your own comment at regulations.gov.
+</summary>
+
+Requirements:
+- Keep it under 280 characters if possible (Twitter-friendly)
+- Write in first person ("I submitted...")
+- Be specific about the topic but accessible to general audiences
+- Include a call-to-action encouraging others to comment
+- Do NOT include the <summary> tags in the main comment body—place them only at the very end
