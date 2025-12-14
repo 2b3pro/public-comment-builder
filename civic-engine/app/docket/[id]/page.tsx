@@ -94,7 +94,7 @@ export default function DocketPage() {
   // UI state
   const [regeneratingCardId, setRegeneratingCardId] = useState<string | null>(null);
   const [generatedDraft, setGeneratedDraft] = useState('');
-  const [visibleCardCount, setVisibleCardCount] = useState(3); // Progressive disclosure: start with 3 cards
+  const [visibleCardCount, setVisibleCardCount] = useState(5); // Progressive disclosure: start with 5 cards
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   // ============================================================
@@ -200,7 +200,7 @@ export default function DocketPage() {
     // Clear previous selections when position changes
     setSelectedArgumentIds([]);
     setCardCustomText({});
-    setVisibleCardCount(3); // Reset to show first 3 cards
+    setVisibleCardCount(5); // Reset to show first 5 cards
   };
 
   const handleForceReanalyze = async () => {
