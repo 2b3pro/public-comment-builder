@@ -6,6 +6,9 @@ import { DocketCard } from '@/components/DocketCard';
 import { getDashboardDockets, searchDockets, refreshDockets, getDocketCommentCounts, getTopRecentDockets, TrendingDocket, warmDocketCache } from '@/app/actions';
 import { DocketSummary } from '@/lib/regulations-api';
 
+// Debug mode shows mock data when buckets are empty (for demo purposes)
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<DocketSummary[]>([]);
@@ -47,10 +50,10 @@ export default function Dashboard() {
       return endDate && endDate > in3DaysStr;
     });
 
-    // Apply Mocks if empty (for demo robustness)
-    const finalToday = todayDocs.length ? todayDocs : [MOCK_DOCKET_TODAY];
-    const final3Days = threeDayDocs.length ? threeDayDocs : [MOCK_DOCKET_3];
-    const final7Days = sevenDayDocs.length ? sevenDayDocs : [MOCK_DOCKET_7];
+    // Apply mock data only in debug mode
+    const finalToday = USE_MOCK && !todayDocs.length ? [MOCK_DOCKET_TODAY] : todayDocs;
+    const final3Days = USE_MOCK && !threeDayDocs.length ? [MOCK_DOCKET_3] : threeDayDocs;
+    const final7Days = USE_MOCK && !sevenDayDocs.length ? [MOCK_DOCKET_7] : sevenDayDocs;
 
     setDueToday(finalToday);
     setDue3Days(final3Days);
@@ -116,10 +119,10 @@ export default function Dashboard() {
         return endDate && endDate > in3DaysStr;
       });
 
-      // Apply mocks if empty
-      const finalToday = todayDocs.length ? todayDocs : [MOCK_DOCKET_TODAY];
-      const final3Days = threeDayDocs.length ? threeDayDocs : [MOCK_DOCKET_3];
-      const final7Days = sevenDayDocs.length ? sevenDayDocs : [MOCK_DOCKET_7];
+      // Apply mock data only in debug mode
+      const finalToday = USE_MOCK && !todayDocs.length ? [MOCK_DOCKET_TODAY] : todayDocs;
+      const final3Days = USE_MOCK && !threeDayDocs.length ? [MOCK_DOCKET_3] : threeDayDocs;
+      const final7Days = USE_MOCK && !sevenDayDocs.length ? [MOCK_DOCKET_7] : sevenDayDocs;
 
       setDueToday(finalToday);
       setDue3Days(final3Days);
@@ -303,6 +306,7 @@ export default function Dashboard() {
             </summary>
             <div className="space-y-4">
               {due3Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
+              {due3Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing in the next 3 days.</p>}
             </div>
           </details>
         )}
@@ -321,6 +325,7 @@ export default function Dashboard() {
             </summary>
             <div className="space-y-4">
               {due7Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
+              {due7Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing this week. Use search to find open comment periods.</p>}
             </div>
           </details>
         )}
