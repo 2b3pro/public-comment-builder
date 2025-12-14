@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2025-12-12
+## 1.20 - 2025-12-12
 
 ### Added - Comment Submission Flow Enhancement
 
