@@ -324,7 +324,9 @@ export default function DocketPage() {
   // SECOND AI CALL: Generate final comment
   // ============================================================
   const handleGenerateDraft = async () => {
-    if (!selectedPosition || !analysis || selectedArgumentIds.length === 0) return;
+    // Position is only required for proposed_rule notice types
+    const needsPosition = analysis?.noticeType === 'proposed_rule';
+    if (!analysis || selectedArgumentIds.length === 0 || (needsPosition && !selectedPosition)) return;
 
     setStep('drafting');
 
@@ -815,12 +817,21 @@ export default function DocketPage() {
                     Check the points that reflect your views
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedPosition === 'support' ? 'bg-green-100 text-green-700' :
-                  selectedPosition === 'oppose' ? 'bg-red-100 text-red-700' :
+                {/* Position badge for proposed_rule, notice type badge for others */}
+                {analysis?.noticeType === 'proposed_rule' && selectedPosition ? (
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    selectedPosition === 'support' ? 'bg-green-100 text-green-700' :
+                    selectedPosition === 'oppose' ? 'bg-red-100 text-red-700' :
                     'bg-yellow-100 text-yellow-700'
                   }`}>
-                  {selectedPosition}
-                </span>
+                    {selectedPosition}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    {analysis?.noticeType === 'pra_notice' ? 'PRA' :
+                     analysis?.noticeType === 'rfi' ? 'RFI' : 'General'}
+                  </span>
+                )}
               </div>
 
               {/* Reason Cards - Progressive Disclosure */}
