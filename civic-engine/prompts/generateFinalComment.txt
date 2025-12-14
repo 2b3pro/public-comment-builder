@@ -1,5 +1,8 @@
-Draft a formal public comment for submission to a U.S. federal agency. 
+Draft a formal public comment for submission to a U.S. federal agency.
 The objective is to produce a comment that is legally substantive, evidence-aware, and sufficiently specific that the agency must meaningfully address it in the final rule.
+
+NOTICE TYPE: {{noticeType}}
+(One of: proposed_rule, pra_notice, rfi, general)
 
 DOCKET CONTEXT:
 {{docketText}}
@@ -8,8 +11,8 @@ COMMENTING REQUIREMENTS (FROM THE DOCKET):
 - Format: {{format}}
 - Required issues or questions to address: {{requiredPoints}}
 
-COMMENTER POSITION:
-{{position}}  (support | oppose | mixed / conditional)
+COMMENTER POSITION (FOR PROPOSED RULES):
+{{position}} (support | oppose | mixed / conditional | N/A for non-proposed_rule)
 
 ARGUMENT MODULES TO INCORPORATE:
 {{selectedArguments}}
@@ -20,17 +23,18 @@ COMMENTER CONTEXT (USE ONLY IF TRUE):
 - Additional personal or organizational context:
 {{customContext}}
 
-────────────────────────────────
-STRUCTURE THE COMMENT USING FEDERAL BEST PRACTICES
-────────────────────────────────
+════════════════════════════════════════════════════════════════════
+STRUCTURE BASED ON NOTICE TYPE
+════════════════════════════════════════════════════════════════════
 
-- Add a header block with agency, docket number, and regulation title
+**IF noticeType = "proposed_rule":**
+Use the traditional regulatory comment structure:
 
 I. INTRODUCTION
 - Identify the agency, docket number, and regulation title
 - Explain why the commenter is submitting input on this rule
 - If applicable, briefly establish relevant experience, expertise, or lived experience
-- Clearly state the commenter’s overall position (support, oppose, or conditional)
+- Clearly state the commenter's overall position (support, oppose, or conditional)
 
 II. BACKGROUND & SCOPE (WHEN CONTEXT IS RELEVANT)
 - Identify the specific provisions, sections, or assumptions being addressed
@@ -42,7 +46,7 @@ III. SUBSTANTIVE ANALYSIS
 For EACH selected argument:
 - Cite or reference the relevant provision, estimate, model, or requirement in the proposed rule
 - Explain HOW the regulation affects real-world behavior, costs, risks, or outcomes
-- Assess whether the agency’s assumptions or analysis appear accurate, incomplete, or outdated
+- Assess whether the agency's assumptions or analysis appear accurate, incomplete, or outdated
 - Identify unintended consequences, edge cases, or implementation risks the agency may have missed
 - Where applicable:
   – Describe supporting lived experience or operational realities
@@ -55,7 +59,7 @@ IV. RECOMMENDATIONS
   – Revisions to language
   – Adjustments to thresholds, timelines, or definitions
   – Alternative regulatory approaches the agency could reasonably consider
-- Explain why each recommendation would better achieve the agency’s stated goals
+- Explain why each recommendation would better achieve the agency's stated goals
 
 V. CONCLUSION
 - Briefly recap the main concerns or points of support
@@ -63,10 +67,94 @@ V. CONCLUSION
 - Thank the agency for the opportunity to comment
 - Close respectfully, leaving placeholders for identifying information
 
-────────────────────────────────
+──────────────────────────────────────────────────────────────────
+
+**IF noticeType = "pra_notice":**
+Structure the comment around the four PRA factors:
+
+I. INTRODUCTION
+- Reference the Paperwork Reduction Act of 1995
+- Identify the information collection request being reviewed
+- Briefly establish relevant experience if applicable
+
+II. COMMENTS ON PRA FACTORS
+
+A. NECESSITY (44 U.S.C. § 3506(c)(3)(A))
+- Address whether the collection is necessary for proper agency performance
+- Discuss if this information is available elsewhere
+- Evaluate if the agency could achieve its goals with less data
+
+B. ACCURACY OF BURDEN ESTIMATES
+- Assess whether time estimates are realistic
+- Identify hidden costs not captured in the estimates
+- Consider record retrieval, compilation, and review time
+
+C. QUALITY, UTILITY, AND CLARITY
+- Evaluate whether collected information will actually be useful
+- Comment on clarity of instructions and form design
+- Suggest improvements to data formats or collection methods
+
+D. BURDEN MINIMIZATION
+- Recommend ways to reduce respondent burden
+- Suggest technological solutions (online forms, autofill, etc.)
+- Propose alternative approaches with lower burden
+
+III. CONCLUSION
+- Summarize key concerns with the information collection
+- Restate primary recommendations
+- Thank the agency for the opportunity to comment
+
+──────────────────────────────────────────────────────────────────
+
+**IF noticeType = "rfi":**
+Structure the comment as responses to the agency's questions:
+
+I. INTRODUCTION
+- Acknowledge the Request for Information
+- Briefly establish relevant experience or perspective
+- Note which questions or topics are being addressed
+
+II. RESPONSES TO AGENCY QUESTIONS
+For EACH selected topic/question:
+- Clearly identify the question being addressed
+- Provide substantive response with supporting rationale
+- Include concrete examples or data where applicable
+- Suggest considerations the agency may not have addressed
+
+III. ADDITIONAL OBSERVATIONS (IF APPLICABLE)
+- Note any gaps in the questions posed
+- Raise related concerns the agency should consider
+
+IV. CONCLUSION
+- Summarize key points
+- Offer to provide additional information if helpful
+- Thank the agency
+
+──────────────────────────────────────────────────────────────────
+
+**IF noticeType = "general":**
+Use a flexible issue-based structure:
+
+I. INTRODUCTION
+- Identify the notice being responded to
+- Establish interest or relevant experience
+
+II. SUBSTANTIVE COMMENTS
+For EACH selected issue:
+- Clearly identify the issue being addressed
+- Provide analysis and reasoning
+- Include supporting examples or evidence
+- Offer recommendations where appropriate
+
+III. CONCLUSION
+- Summarize main points
+- Thank the agency
+
+════════════════════════════════════════════════════════════════════
 FORMATTING & QUALITY REQUIREMENTS
-────────────────────────────────
-- Use formal, professional language appropriate for administrative rulemaking
+════════════════════════════════════════════════════════════════════
+- Add a header block with agency, docket number, and regulation/notice title
+- Use formal, professional language appropriate for administrative proceedings
 - Be precise, concrete, and evidence-oriented—avoid slogans or generalized opinions
 - Write with the expectation that the comment may be cited, summarized, or responded to in the final rule
 - Do not overstate certainty; qualify claims where appropriate

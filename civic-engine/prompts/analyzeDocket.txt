@@ -13,19 +13,46 @@ OPERATING PREMISE (Federal Reality Check):
 • Agencies must respond to significant, relevant, evidence-based comments.
 • The strongest comments explain *how* the proposal affects real people, assumptions, markets, or systems—often through lived experience or concrete examples.
 
-YOUR ANALYSIS MUST DO THE FOLLOWING:
+════════════════════════════════════════════════════════════════════
+STEP 1: DETECT THE NOTICE TYPE (CRITICAL)
+════════════════════════════════════════════════════════════════════
 
-────────────────────────────────
-I. PLAIN-LANGUAGE ORIENTATION
-────────────────────────────────
+Before generating any analysis, determine what type of federal notice this is. The notice type determines what kind of response framework is appropriate.
+
+NOTICE TYPE DETECTION RULES:
+
+1. **proposed_rule** - A Notice of Proposed Rulemaking (NPRM)
+   - Look for: "proposed rule", "proposed regulation", "rulemaking", regulatory text with section numbers
+   - Citizens can express support, opposition, or conditional positions
+   - Response framework: Support / Oppose / Mixed positions with reason cards
+
+2. **pra_notice** - Paperwork Reduction Act Information Collection Request
+   - Look for: "Paperwork Reduction Act", "PRA", "OMB Control Number", "information collection", "burden estimate", "burden hours"
+   - Citizens cannot simply "support" or "oppose" - they must address PRA factors
+   - Response framework: PRA factors (necessity, burden accuracy, quality, burden minimization)
+
+3. **rfi** - Request for Information or Advance Notice of Proposed Rulemaking (ANPRM)
+   - Look for: "request for information", "RFI", "seeking comment on", "advance notice", "ANPRM", numbered questions the agency wants answered
+   - Citizens should respond to the specific questions posed
+   - Response framework: Question-based response cards
+
+4. **general** - Other notices (final rules, guidance, announcements)
+   - When it doesn't fit the above categories
+   - Response framework: Issue-based response cards
+
+Set `noticeType` to one of: "proposed_rule", "pra_notice", "rfi", "general"
+
+════════════════════════════════════════════════════════════════════
+STEP 2: PLAIN-LANGUAGE ORIENTATION
+════════════════════════════════════════════════════════════════════
 • Write a 2–3 sentence summary explaining:
-  – What this regulation proposes
+  – What this document proposes or requests
   – Why it matters to ordinary people
 • Avoid jargon. Assume no prior policy knowledge.
 
-────────────────────────────────
-II. COMMENTING INSTRUCTIONS EXTRACTION
-────────────────────────────────
+════════════════════════════════════════════════════════════════════
+STEP 3: COMMENTING INSTRUCTIONS EXTRACTION
+════════════════════════════════════════════════════════════════════
 From the docket text, extract and present:
 • Deadline(s)
 • Required format or questions
@@ -67,78 +94,137 @@ F) **responsePeriodDays**: Number of days in the comment period.
    - Example: 60, 30, 90
    - Set to 0 if unknown
 
-────────────────────────────────
-III. ISSUE MAP (WHAT'S REALLY AT STAKE)
-────────────────────────────────
-Identify:
-• The problem the agency claims to address
-• The core assumptions underlying the proposal
-• The primary mechanisms of regulation (who must do what, by when, at what cost)
-• Stakeholders likely affected (including those possibly overlooked)
+════════════════════════════════════════════════════════════════════
+STEP 4: GENERATE RESPONSE FRAMEWORK (BASED ON NOTICE TYPE)
+════════════════════════════════════════════════════════════════════
 
-────────────────────────────────
-IV. REASON-CARD GENERATION
-────────────────────────────────
-Generate **reason cards** that users can select from when drafting comments.
+**IF noticeType = "proposed_rule":**
+Generate traditional position-based reason cards.
 
-For EACH position:
-• SUPPORT
-• OPPOSE
-• MIXED / CONDITIONAL
+For EACH position (support, oppose, mixed):
+• Provide 6–8 reason cards, ranked from strongest to weakest
+• Align to federal evaluation criteria:
+  1. Problem definition & necessity
+  2. Scientific, technical, or economic assumptions
+  3. Cost-benefit balance
+  4. Distributional impacts
+  5. Small entity / vulnerable population impacts
+  6. Non-monetizable impacts (privacy, dignity, equity)
+  7. Implementation feasibility
 
-Provide **6–8 reason cards per position**, **ranked from strongest to weakest argument**. The first 3 cards should be the most compelling, legally substantive arguments. Later cards can address secondary concerns or niche impacts.
+Each reason card includes:
+- id (e.g., "sup-cost-1", "opp-impl-2")
+- topic (short title)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion})
 
-Align cards to federal evaluation criteria, such as:
-1. Problem definition & necessity
-2. Accuracy of scientific, technical, or economic assumptions
-3. Cost-benefit balance
-4. Distributional impacts (who bears costs vs. who benefits)
-5. Impacts on small entities, vulnerable populations, or specific sectors
-6. Non-monetizable impacts (privacy, dignity, equity, civil liberties, fairness)
-7. Implementation feasibility & unintended consequences
+──────────────────────────────────────────────────────────────────
 
-────────────────────────────────
-V. REASON-CARD STRUCTURE (STRICT)
-────────────────────────────────
-Each reason card must include:
+**IF noticeType = "pra_notice":**
+Generate PRA factor-based response cards. DO NOT generate support/oppose positions.
 
-• **Unique ID**  
-  (e.g., `sup-cost-1`, `opp-impl-2`, `mix-equity-1`)
+Instead, generate `praFactors` object with four categories:
 
-• **Title**  
-  Short, descriptive, neutral-toned
+1. **necessity** - Whether the collection is necessary
+   - Is this information already available elsewhere?
+   - Does collecting this serve a legitimate agency function?
+   - Could the agency achieve its goals with less information?
 
-• **Icon Tag**  
-  Choose ONE Material Symbol that best fits:
-  shield · lock · timer · lightbulb · verified_user · speed · smartphone · tune · filter_list · policy · gavel · description · trending_up · visibility · groups · balance · warning
+2. **burdenAccuracy** - Accuracy of burden estimates
+   - Is the estimated time per response realistic?
+   - Does the estimate account for record retrieval, compilation, review?
+   - Are there hidden costs (software, training, third-party assistance)?
 
-• **Core Argument (2–3 bullets)**  
-  Each bullet should:
-  – Reference a specific provision, assumption, estimate, or mechanism in the docket
+3. **quality** - Enhancing quality, utility, and clarity
+   - Will the collected information actually be useful?
+   - Are the forms/questions clear and unambiguous?
+   - Could the data format be improved?
+
+4. **burdenMinimization** - Minimizing respondent burden
+   - Could technology reduce burden (online forms, autofill)?
+   - Are there simpler ways to gather this information?
+   - Could frequency of collection be reduced?
+
+Each PRA factor category contains:
+- id (e.g., "pra-nec-1")
+- topic (short title)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion})
+
+──────────────────────────────────────────────────────────────────
+
+**IF noticeType = "rfi":**
+Generate question-based response cards. DO NOT generate support/oppose positions.
+
+First, extract the specific questions the agency is asking (look for numbered questions, bullet points asking for input, or sections titled "Questions for Comment").
+
+Then generate `rfiQuestions` array where each item represents a question with:
+- questionNumber (the original number, or 1, 2, 3 if unnumbered)
+- questionText (the agency's actual question, paraphrased if very long)
+- responseCards (array of response options for this question)
+
+Each response card has:
+- id (e.g., "rfi-q1-1")
+- topic (short response angle)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion})
+
+──────────────────────────────────────────────────────────────────
+
+**IF noticeType = "general":**
+Generate issue-based response cards without position framing.
+
+Generate `issueCards` array of general response angles:
+- id (e.g., "gen-impl-1")
+- topic (the issue being addressed)
+- icon (Material Symbol)
+- arguments (array of {id, label, expansion})
+
+════════════════════════════════════════════════════════════════════
+STEP 5: REASON CARD STRUCTURE (ALL TYPES)
+════════════════════════════════════════════════════════════════════
+Every reason/response card, regardless of notice type, must include:
+
+• **Unique ID** (e.g., `sup-cost-1`, `pra-bur-2`, `rfi-q1-1`)
+
+• **Topic** - Short, descriptive, neutral-toned
+
+• **Icon Tag** - Choose ONE Material Symbol:
+  shield · lock · timer · lightbulb · verified_user · speed · smartphone · tune · filter_list · policy · gavel · description · trending_up · visibility · groups · balance · warning · calculate · fact_check · edit_document · help_outline
+
+• **Arguments (2–4 per card)** - Each must:
+  – Reference a specific provision, assumption, estimate, or mechanism
   – Explain why it matters legally or practically
-  – Be phrased in formal, substantive language appropriate for regulatory comments
+  – Be phrased in formal, substantive language
 
-• **Lived-Experience Hook**  
-  1–2 sentences explaining how an individual, worker, business owner, caregiver, consumer, or community member might credibly support this argument with real-world experience.
+• **Lived-Experience Hook** - 1–2 sentences explaining how someone might credibly support this argument with real-world experience
 
-• **Blind Spots / Unintended Effects**  
-  Identify what the agency may have underestimated, ignored, or oversimplified.
+• **Blind Spots** - What the agency may have underestimated or overlooked
 
-────────────────────────────────
-VI. COMMENT DRAFTING SCHEMA (OUTPUT-READY)
-────────────────────────────────
-Structure all outputs so they can be directly assembled into a public comment using this canonical format:
+════════════════════════════════════════════════════════════════════
+OUTPUT STRUCTURE
+════════════════════════════════════════════════════════════════════
 
-1. Introduction — why the commenter is affected or engaged
-2. Regulation Reference — cite the specific portion addressed
-3. Analysis — substantive argument with reasoning
-4. Recommendation — concrete change, clarification, or alternative
-5. Conclusion — restate concern and requested action
+Your response MUST include:
 
-Do NOT draft full comments unless explicitly requested—your role is to supply the *reasoning building blocks*.
+1. `noticeType`: One of "proposed_rule", "pra_notice", "rfi", "general"
 
-────────────────────────────────
-QUALITY BARS (NON-NEGOTIABLE):
+2. `summary`: Plain-language summary
+
+3. `openForComment`: Boolean
+
+4. `commentingInstructions`: Object with deadline, format, submission info
+
+5. **One of the following based on noticeType:**
+
+   - If "proposed_rule": `positions` object with support/oppose/mixed
+   - If "pra_notice": `praFactors` object with necessity/burdenAccuracy/quality/burdenMinimization
+   - If "rfi": `rfiQuestions` array with question-specific response cards
+   - If "general": `issueCards` array
+
+════════════════════════════════════════════════════════════════════
+QUALITY BARS (NON-NEGOTIABLE)
+════════════════════════════════════════════════════════════════════
 • Neutral, professional, legally literate tone
 • No advocacy slogans or emotional appeals
 • No vague generalities

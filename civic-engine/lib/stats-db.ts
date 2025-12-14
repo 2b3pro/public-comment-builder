@@ -79,7 +79,8 @@ export interface CommentStatRecord {
   docketId: string;
   docketTitle?: string;
   agencyId?: string;
-  position: 'support' | 'oppose' | 'mixed';
+  noticeType?: 'proposed_rule' | 'pra_notice' | 'rfi' | 'general';
+  position?: 'support' | 'oppose' | 'mixed'; // Only for proposed_rule notice type
   argumentCount: number;
   argumentTopics?: string[];  // Track which argument topics were selected
   isExpert: boolean;
@@ -121,18 +122,21 @@ export function recordCommentGenerated(data: CommentStatRecord): void {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    // For non-proposed_rule notice types, use notice type as position for backwards compatibility
+    const positionValue = data.position || data.noticeType || 'unknown';
+
     stmt.run(
       data.docketId,
       data.docketTitle || null,
       data.agencyId || null,
-      data.position,
+      positionValue,
       data.argumentCount,
       data.argumentTopics ? JSON.stringify(data.argumentTopics) : null,
       data.isExpert ? 1 : 0,
       data.affectsLivelihood ? 1 : 0
     );
 
-    console.log(`[stats-db] Recorded comment for docket ${data.docketId}, position: ${data.position}`);
+    console.log(`[stats-db] Recorded comment for docket ${data.docketId}, type: ${data.noticeType || 'proposed_rule'}, position: ${data.position || 'N/A'}`);
   } catch (err) {
     console.error('[stats-db] Error recording stats:', err);
   }

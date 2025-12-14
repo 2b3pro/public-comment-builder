@@ -19,6 +19,7 @@ import {
 import {
   DocketAnalysis,
   Position,
+  NoticeType,
   ReasonCard,
   ArgumentOption
 } from '@/lib/ai-generator';
@@ -118,22 +119,74 @@ export default function DocketPage() {
   }, [docketId]);
 
   // ============================================================
-  // Get current position's reason cards
+  // Get current reason cards based on notice type
   // ============================================================
-  const currentReasonCards: ReasonCard[] = analysis && selectedPosition
-    ? analysis.positions[selectedPosition].reasonCards
-    : [];
+  const getCurrentReasonCards = (): ReasonCard[] => {
+    if (!analysis) return [];
+
+    // For proposed_rule: use position-based cards
+    if (analysis.noticeType === 'proposed_rule' && analysis.positions && selectedPosition) {
+      return analysis.positions[selectedPosition]?.reasonCards || [];
+    }
+
+    // For pra_notice: combine all PRA factor cards
+    if (analysis.noticeType === 'pra_notice' && analysis.praFactors) {
+      return [
+        ...analysis.praFactors.necessity.reasonCards,
+        ...analysis.praFactors.burdenAccuracy.reasonCards,
+        ...analysis.praFactors.quality.reasonCards,
+        ...analysis.praFactors.burdenMinimization.reasonCards
+      ];
+    }
+
+    // For rfi: combine all question response cards
+    if (analysis.noticeType === 'rfi' && analysis.rfiQuestions) {
+      return analysis.rfiQuestions.flatMap(q => q.responseCards);
+    }
+
+    // For general: use issue cards
+    if (analysis.noticeType === 'general' && analysis.issueCards) {
+      return analysis.issueCards;
+    }
+
+    // Fallback: try positions if available
+    if (analysis.positions && selectedPosition) {
+      return analysis.positions[selectedPosition]?.reasonCards || [];
+    }
+
+    return [];
+  };
+
+  const currentReasonCards: ReasonCard[] = getCurrentReasonCards();
 
   // Build a map of all arguments for easy lookup
   // Use compound key (cardId::argId) to ensure uniqueness across cards
   const argumentMap: Record<string, ArgumentOption> = {};
   if (analysis) {
-    Object.values(analysis.positions).forEach(pos => {
-      pos.reasonCards.forEach(card => {
-        card.arguments.forEach(arg => {
-          const uniqueId = `${card.id}::${arg.id}`;
-          argumentMap[uniqueId] = arg;
-        });
+    // Gather all reason cards based on notice type
+    let allCards: ReasonCard[] = [];
+
+    if (analysis.noticeType === 'proposed_rule' && analysis.positions) {
+      Object.values(analysis.positions).forEach(pos => {
+        allCards = allCards.concat(pos.reasonCards);
+      });
+    } else if (analysis.noticeType === 'pra_notice' && analysis.praFactors) {
+      allCards = [
+        ...analysis.praFactors.necessity.reasonCards,
+        ...analysis.praFactors.burdenAccuracy.reasonCards,
+        ...analysis.praFactors.quality.reasonCards,
+        ...analysis.praFactors.burdenMinimization.reasonCards
+      ];
+    } else if (analysis.noticeType === 'rfi' && analysis.rfiQuestions) {
+      allCards = analysis.rfiQuestions.flatMap(q => q.responseCards);
+    } else if (analysis.noticeType === 'general' && analysis.issueCards) {
+      allCards = analysis.issueCards;
+    }
+
+    allCards.forEach(card => {
+      card.arguments.forEach(arg => {
+        const uniqueId = `${card.id}::${arg.id}`;
+        argumentMap[uniqueId] = arg;
       });
     });
   }
@@ -176,7 +229,9 @@ export default function DocketPage() {
   };
 
   const handleContinueToReasoning = () => {
-    if (selectedPosition) {
+    // For non-proposed_rule types, position is optional
+    const needsPosition = analysis?.noticeType === 'proposed_rule';
+    if (!needsPosition || selectedPosition) {
       setStep('reasoning');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -189,32 +244,72 @@ export default function DocketPage() {
   };
 
   const handleRegenerateCard = useCallback(async (card: ReasonCard) => {
-    if (!selectedPosition || !analysis) return;
+    if (!analysis) return;
+    // For proposed_rule, require position; for others, use notice type
+    if (analysis.noticeType === 'proposed_rule' && !selectedPosition) return;
 
     setRegeneratingCardId(card.id);
     try {
       const existingLabels = card.arguments.map(a => a.label);
+      // Note: regenerateReasonCardAction needs updating to support notice types
       const newCard = await regenerateReasonCardAction(
         docketId,
-        selectedPosition,
+        selectedPosition || 'mixed', // fallback for non-position types
         card.topic,
         existingLabels
       );
 
-      // Update the analysis with the new card
+      // Update the analysis with the new card based on notice type
       setAnalysis(prev => {
         if (!prev) return prev;
-        const updatedPositions = { ...prev.positions };
-        const positionData = { ...updatedPositions[selectedPosition] };
-        positionData.reasonCards = positionData.reasonCards.map(c =>
-          c.id === card.id ? newCard : c
-        );
-        updatedPositions[selectedPosition] = positionData;
-        return { ...prev, positions: updatedPositions };
+
+        if (prev.noticeType === 'proposed_rule' && prev.positions && selectedPosition) {
+          const updatedPositions = { ...prev.positions };
+          const positionData = { ...updatedPositions[selectedPosition] };
+          positionData.reasonCards = positionData.reasonCards.map(c =>
+            c.id === card.id ? newCard : c
+          );
+          updatedPositions[selectedPosition] = positionData;
+          return { ...prev, positions: updatedPositions };
+        }
+
+        // For PRA notices, update the appropriate factor
+        if (prev.noticeType === 'pra_notice' && prev.praFactors) {
+          const updatedFactors = { ...prev.praFactors };
+          for (const factorKey of ['necessity', 'burdenAccuracy', 'quality', 'burdenMinimization'] as const) {
+            updatedFactors[factorKey] = {
+              ...updatedFactors[factorKey],
+              reasonCards: updatedFactors[factorKey].reasonCards.map(c =>
+                c.id === card.id ? newCard : c
+              )
+            };
+          }
+          return { ...prev, praFactors: updatedFactors };
+        }
+
+        // For RFI, update the question's response cards
+        if (prev.noticeType === 'rfi' && prev.rfiQuestions) {
+          const updatedQuestions = prev.rfiQuestions.map(q => ({
+            ...q,
+            responseCards: q.responseCards.map(c =>
+              c.id === card.id ? newCard : c
+            )
+          }));
+          return { ...prev, rfiQuestions: updatedQuestions };
+        }
+
+        // For general, update issue cards
+        if (prev.noticeType === 'general' && prev.issueCards) {
+          const updatedCards = prev.issueCards.map(c =>
+            c.id === card.id ? newCard : c
+          );
+          return { ...prev, issueCards: updatedCards };
+        }
+
+        return prev;
       });
 
       // Clear any selections from this card since IDs changed
-      // IDs use compound format: cardId::argId
       setSelectedArgumentIds(prev =>
         prev.filter(id => !id.startsWith(`${card.id}::`))
       );
@@ -255,12 +350,15 @@ export default function DocketPage() {
       const draft = await generateCommentDraft(
         docketId,
         analysis.commentingInstructions,
-        selectedPosition,
         selectedArgs,
         {
           isExpert: impactExpertise,
           affectsLivelihood: impactLivelihood,
           customText: allCustomText || undefined
+        },
+        {
+          noticeType: analysis.noticeType,
+          position: selectedPosition || undefined
         }
       );
 
@@ -585,68 +683,92 @@ export default function DocketPage() {
                 )}
               </div>
 
-              {/* Explore Perspectives - Help undecided users */}
-              {analysis && (
-                <details className="mb-6 group">
-                  <summary className="cursor-pointer flex items-center gap-2 text-sm text-primary hover:text-blue-700 transition-colors">
-                    <span className="material-symbols-outlined text-base group-open:rotate-90 transition-transform">
-                      chevron_right
-                    </span>
-                    Not sure where you stand? Explore different perspectives
-                  </summary>
-                  <div className="mt-4 space-y-3 animate-fade-in">
-                    {/* Support perspective */}
-                    <div
-                      className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
-                      onClick={() => handlePositionSelect('support')}
-                    >
-                      <span className="material-symbols-outlined text-green-600 mt-0.5">thumb_up</span>
-                      <div>
-                        <p className="text-sm font-medium text-green-800">Support</p>
-                        <p className="text-xs text-green-700 mt-1">{analysis.positions.support.summary}</p>
+              {/* For proposed_rule: Show stance selection */}
+              {analysis?.noticeType === 'proposed_rule' && analysis.positions && (
+                <>
+                  {/* Explore Perspectives - Help undecided users */}
+                  <details className="mb-6 group">
+                    <summary className="cursor-pointer flex items-center gap-2 text-sm text-primary hover:text-blue-700 transition-colors">
+                      <span className="material-symbols-outlined text-base group-open:rotate-90 transition-transform">
+                        chevron_right
+                      </span>
+                      Not sure where you stand? Explore different perspectives
+                    </summary>
+                    <div className="mt-4 space-y-3 animate-fade-in">
+                      {/* Support perspective */}
+                      <div
+                        className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
+                        onClick={() => handlePositionSelect('support')}
+                      >
+                        <span className="material-symbols-outlined text-green-600 mt-0.5">thumb_up</span>
+                        <div>
+                          <p className="text-sm font-medium text-green-800">Support</p>
+                          <p className="text-xs text-green-700 mt-1">{analysis.positions.support.summary}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Mixed perspective */}
-                    <div
-                      className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
-                      onClick={() => handlePositionSelect('mixed')}
-                    >
-                      <span className="material-symbols-outlined text-amber-600 mt-0.5">thumbs_up_down</span>
-                      <div>
-                        <p className="text-sm font-medium text-amber-800">Mixed</p>
-                        <p className="text-xs text-amber-700 mt-1">{analysis.positions.mixed.summary}</p>
+                      {/* Mixed perspective */}
+                      <div
+                        className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
+                        onClick={() => handlePositionSelect('mixed')}
+                      >
+                        <span className="material-symbols-outlined text-amber-600 mt-0.5">thumbs_up_down</span>
+                        <div>
+                          <p className="text-sm font-medium text-amber-800">Mixed</p>
+                          <p className="text-xs text-amber-700 mt-1">{analysis.positions.mixed.summary}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Oppose perspective */}
-                    <div
-                      className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100 cursor-pointer hover:bg-red-100 transition-colors"
-                      onClick={() => handlePositionSelect('oppose')}
-                    >
-                      <span className="material-symbols-outlined text-red-600 mt-0.5">thumb_down</span>
-                      <div>
-                        <p className="text-sm font-medium text-red-800">Oppose</p>
-                        <p className="text-xs text-red-700 mt-1">{analysis.positions.oppose.summary}</p>
+                      {/* Oppose perspective */}
+                      <div
+                        className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100 cursor-pointer hover:bg-red-100 transition-colors"
+                        onClick={() => handlePositionSelect('oppose')}
+                      >
+                        <span className="material-symbols-outlined text-red-600 mt-0.5">thumb_down</span>
+                        <div>
+                          <p className="text-sm font-medium text-red-800">Oppose</p>
+                          <p className="text-xs text-red-700 mt-1">{analysis.positions.oppose.summary}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </details>
+                  </details>
+
+                  {/* Stance Selector */}
+                  <StanceSelector
+                    value={selectedPosition}
+                    onChange={handlePositionSelect}
+                  />
+
+                  {/* Position Summary Preview */}
+                  {selectedPosition && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-fade-in">
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        <span className="font-medium text-gray-900">Why people {selectedPosition}:</span>{' '}
+                        {analysis.positions[selectedPosition].summary}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
-              {/* Stance Selector */}
-              <StanceSelector
-                value={selectedPosition}
-                onChange={handlePositionSelect}
-              />
-
-              {/* Position Summary Preview */}
-              {selectedPosition && analysis && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-fade-in">
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    <span className="font-medium text-gray-900">Why people {selectedPosition}:</span>{' '}
-                    {analysis.positions[selectedPosition].summary}
-                  </p>
+              {/* For non-proposed_rule: Show notice type context */}
+              {analysis && analysis.noticeType !== 'proposed_rule' && (
+                <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-blue-600 mt-0.5">info</span>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">
+                        {analysis.noticeType === 'pra_notice' && 'Paperwork Reduction Act Notice'}
+                        {analysis.noticeType === 'rfi' && 'Request for Information'}
+                        {analysis.noticeType === 'general' && 'General Notice'}
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        {analysis.noticeType === 'pra_notice' && 'Comments should address the four PRA factors: necessity, burden accuracy, quality enhancement, and burden minimization.'}
+                        {analysis.noticeType === 'rfi' && 'The agency is seeking input on specific questions. Select the topics you want to address.'}
+                        {analysis.noticeType === 'general' && 'Select the issues you want to address in your comment.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -654,17 +776,18 @@ export default function DocketPage() {
               <div className="mt-8">
                 <button
                   onClick={handleContinueToReasoning}
-                  disabled={!selectedPosition}
-                  className={`w-full flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg transition-all ${!selectedPosition
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-primary hover:bg-blue-600 shadow-blue-500/30"
-                    }`}
+                  disabled={analysis?.noticeType === 'proposed_rule' && !selectedPosition}
+                  className={`w-full flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg transition-all ${
+                    (analysis?.noticeType === 'proposed_rule' && !selectedPosition)
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-primary hover:bg-blue-600 shadow-blue-500/30"
+                  }`}
                 >
                   <span className="material-symbols-outlined">arrow_forward</span>
-                  Choose My Arguments
+                  {analysis?.noticeType === 'proposed_rule' ? 'Choose My Arguments' : 'Select Response Topics'}
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-3">
-                  {analysis?.positions[selectedPosition || 'oppose'].reasonCards.length || 0} argument categories available
+                  {currentReasonCards.length || 0} {analysis?.noticeType === 'proposed_rule' ? 'argument categories' : 'response topics'} available
                 </p>
               </div>
 

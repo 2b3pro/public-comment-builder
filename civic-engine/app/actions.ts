@@ -7,6 +7,7 @@ import {
   generateFinalComment,
   DocketAnalysis,
   Position,
+  NoticeType,
   ReasonCard,
   ArgumentOption,
   CommentingInstructions,
@@ -404,32 +405,37 @@ export async function regenerateReasonCardAction(
 /**
  * Generates the final formatted comment based on user selections.
  * This is the SECOND AI call in the two-call architecture.
+ * Supports different notice types (proposed_rule, pra_notice, rfi, general).
  */
 export async function generateCommentDraft(
   docketId: string,
   commentingInstructions: CommentingInstructions,
-  position: Position,
   selectedArguments: ArgumentOption[],
   personalContext: {
     isExpert: boolean;
     affectsLivelihood: boolean;
     customText?: string;
   },
+  options: {
+    noticeType?: NoticeType;
+    position?: Position; // Only for proposed_rule notice type
+  } = {},
   docketMetadata?: {
     title?: string;
     agencyId?: string;
   }
 ): Promise<string> {
-  console.log(`[actions] generateCommentDraft: position=${position}, args=${selectedArguments.length}`);
+  const { noticeType = 'proposed_rule', position } = options;
+  console.log(`[actions] generateCommentDraft: noticeType=${noticeType}, position=${position}, args=${selectedArguments.length}`);
 
   const { text: docketText } = await getDocketText(docketId);
 
   const comment = await generateFinalComment(
     docketText,
     commentingInstructions,
-    position,
     selectedArguments,
-    personalContext
+    personalContext,
+    { noticeType, position }
   );
 
   // Record statistics
@@ -441,6 +447,7 @@ export async function generateCommentDraft(
       docketId,
       docketTitle: docketMetadata?.title,
       agencyId: docketMetadata?.agencyId || extractAgencyFromDocketId(docketId),
+      noticeType,
       position,
       argumentCount: selectedArguments.length,
       argumentTopics,

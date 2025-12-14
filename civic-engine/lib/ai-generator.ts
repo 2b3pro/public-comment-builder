@@ -62,9 +62,64 @@ async function logAICall(name: string, prompt: string, response: string) {
 // RESPONSE SCHEMAS FOR STRUCTURED OUTPUT
 // ============================================================
 
+// Reusable schema for reason cards (used across all notice types)
+const reasonCardSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    topic: { type: SchemaType.STRING },
+    icon: { type: SchemaType.STRING },
+    arguments: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          id: { type: SchemaType.STRING },
+          label: { type: SchemaType.STRING },
+          expansion: { type: SchemaType.STRING }
+        },
+        required: ["id", "label", "expansion"]
+      }
+    }
+  },
+  required: ["id", "topic", "icon", "arguments"]
+};
+
+// Position analysis schema (for proposed_rule notice type)
+const positionAnalysisSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    position: { type: SchemaType.STRING },
+    summary: { type: SchemaType.STRING },
+    reasonCards: {
+      type: SchemaType.ARRAY,
+      items: reasonCardSchema
+    }
+  },
+  required: ["position", "summary", "reasonCards"]
+};
+
+// RFI Question schema (for rfi notice type)
+const rfiQuestionSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    questionNumber: { type: SchemaType.NUMBER, description: "The question number from the original document" },
+    questionText: { type: SchemaType.STRING, description: "The agency's question, paraphrased if very long" },
+    responseCards: {
+      type: SchemaType.ARRAY,
+      items: reasonCardSchema
+    }
+  },
+  required: ["questionNumber", "questionText", "responseCards"]
+};
+
 const docketAnalysisSchema: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
+    noticeType: {
+      type: SchemaType.STRING,
+      description: "Type of federal notice: 'proposed_rule', 'pra_notice', 'rfi', or 'general'"
+    },
     summary: { type: SchemaType.STRING, description: "Plain-language 2-3 sentence summary" },
     openForComment: { type: SchemaType.BOOLEAN, description: "True if comment period is open based on text deadlines and current date" },
     commentingInstructions: {
@@ -82,110 +137,79 @@ const docketAnalysisSchema: ResponseSchema = {
       },
       required: ["submissionEmail", "onlineSubmission", "submissionMethodsDescription", "deadlineDate", "responsePeriodDays"]
     },
+    // For proposed_rule notice type: traditional positions
     positions: {
       type: SchemaType.OBJECT,
+      nullable: true,
+      description: "Only populated for proposed_rule notice type",
       properties: {
-        support: {
-          type: SchemaType.OBJECT,
-          properties: {
-            position: { type: SchemaType.STRING },
-            summary: { type: SchemaType.STRING },
-            reasonCards: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  id: { type: SchemaType.STRING },
-                  topic: { type: SchemaType.STRING },
-                  icon: { type: SchemaType.STRING },
-                  arguments: {
-                    type: SchemaType.ARRAY,
-                    items: {
-                      type: SchemaType.OBJECT,
-                      properties: {
-                        id: { type: SchemaType.STRING },
-                        label: { type: SchemaType.STRING },
-                        expansion: { type: SchemaType.STRING }
-                      },
-                      required: ["id", "label", "expansion"]
-                    }
-                  }
-                },
-                required: ["id", "topic", "icon", "arguments"]
-              }
-            }
-          },
-          required: ["position", "summary", "reasonCards"]
-        },
-        oppose: {
-          type: SchemaType.OBJECT,
-          properties: {
-            position: { type: SchemaType.STRING },
-            summary: { type: SchemaType.STRING },
-            reasonCards: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  id: { type: SchemaType.STRING },
-                  topic: { type: SchemaType.STRING },
-                  icon: { type: SchemaType.STRING },
-                  arguments: {
-                    type: SchemaType.ARRAY,
-                    items: {
-                      type: SchemaType.OBJECT,
-                      properties: {
-                        id: { type: SchemaType.STRING },
-                        label: { type: SchemaType.STRING },
-                        expansion: { type: SchemaType.STRING }
-                      },
-                      required: ["id", "label", "expansion"]
-                    }
-                  }
-                },
-                required: ["id", "topic", "icon", "arguments"]
-              }
-            }
-          },
-          required: ["position", "summary", "reasonCards"]
-        },
-        mixed: {
-          type: SchemaType.OBJECT,
-          properties: {
-            position: { type: SchemaType.STRING },
-            summary: { type: SchemaType.STRING },
-            reasonCards: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  id: { type: SchemaType.STRING },
-                  topic: { type: SchemaType.STRING },
-                  icon: { type: SchemaType.STRING },
-                  arguments: {
-                    type: SchemaType.ARRAY,
-                    items: {
-                      type: SchemaType.OBJECT,
-                      properties: {
-                        id: { type: SchemaType.STRING },
-                        label: { type: SchemaType.STRING },
-                        expansion: { type: SchemaType.STRING }
-                      },
-                      required: ["id", "label", "expansion"]
-                    }
-                  }
-                },
-                required: ["id", "topic", "icon", "arguments"]
-              }
-            }
-          },
-          required: ["position", "summary", "reasonCards"]
-        }
+        support: positionAnalysisSchema,
+        oppose: positionAnalysisSchema,
+        mixed: positionAnalysisSchema
       },
       required: ["support", "oppose", "mixed"]
+    },
+    // For pra_notice type: PRA factors
+    praFactors: {
+      type: SchemaType.OBJECT,
+      nullable: true,
+      description: "Only populated for pra_notice notice type - the four PRA factors",
+      properties: {
+        necessity: {
+          type: SchemaType.OBJECT,
+          description: "Whether the collection is necessary for agency functions",
+          properties: {
+            summary: { type: SchemaType.STRING },
+            reasonCards: { type: SchemaType.ARRAY, items: reasonCardSchema }
+          },
+          required: ["summary", "reasonCards"]
+        },
+        burdenAccuracy: {
+          type: SchemaType.OBJECT,
+          description: "Accuracy of burden estimates (time, cost)",
+          properties: {
+            summary: { type: SchemaType.STRING },
+            reasonCards: { type: SchemaType.ARRAY, items: reasonCardSchema }
+          },
+          required: ["summary", "reasonCards"]
+        },
+        quality: {
+          type: SchemaType.OBJECT,
+          description: "Enhancing quality, utility, and clarity of information",
+          properties: {
+            summary: { type: SchemaType.STRING },
+            reasonCards: { type: SchemaType.ARRAY, items: reasonCardSchema }
+          },
+          required: ["summary", "reasonCards"]
+        },
+        burdenMinimization: {
+          type: SchemaType.OBJECT,
+          description: "Minimizing burden on respondents",
+          properties: {
+            summary: { type: SchemaType.STRING },
+            reasonCards: { type: SchemaType.ARRAY, items: reasonCardSchema }
+          },
+          required: ["summary", "reasonCards"]
+        }
+      },
+      required: ["necessity", "burdenAccuracy", "quality", "burdenMinimization"]
+    },
+    // For rfi notice type: questions with response cards
+    rfiQuestions: {
+      type: SchemaType.ARRAY,
+      nullable: true,
+      description: "Only populated for rfi notice type - agency questions with response options",
+      items: rfiQuestionSchema
+    },
+    // For general notice type: issue-based cards
+    issueCards: {
+      type: SchemaType.ARRAY,
+      nullable: true,
+      description: "Only populated for general notice type - issue-based response cards",
+      items: reasonCardSchema
     }
   },
-  required: ["summary", "commentingInstructions", "positions"]
+  required: ["noticeType", "summary", "commentingInstructions"]
 };
 
 // ============================================================
@@ -193,6 +217,8 @@ const docketAnalysisSchema: ResponseSchema = {
 // ============================================================
 
 export type Position = 'support' | 'oppose' | 'mixed';
+export type NoticeType = 'proposed_rule' | 'pra_notice' | 'rfi' | 'general';
+export type PRAFactor = 'necessity' | 'burdenAccuracy' | 'quality' | 'burdenMinimization';
 
 export interface ArgumentOption {
   id: string;
@@ -213,6 +239,24 @@ export interface PositionAnalysis {
   reasonCards: ReasonCard[];
 }
 
+export interface PRAFactorAnalysis {
+  summary: string;
+  reasonCards: ReasonCard[];
+}
+
+export interface PRAFactors {
+  necessity: PRAFactorAnalysis;
+  burdenAccuracy: PRAFactorAnalysis;
+  quality: PRAFactorAnalysis;
+  burdenMinimization: PRAFactorAnalysis;
+}
+
+export interface RFIQuestion {
+  questionNumber: number;
+  questionText: string;
+  responseCards: ReasonCard[];
+}
+
 export interface CommentingInstructions {
   format?: string;
   requiredPoints?: string[];
@@ -226,13 +270,27 @@ export interface CommentingInstructions {
 }
 
 export interface DocketAnalysis {
+  noticeType: NoticeType; // Type of federal notice determines response framework
   summary: string; // Plain-language summary of what the docket is about
   commentingInstructions: CommentingInstructions;
-  positions: {
+
+  // For proposed_rule notice type: traditional positions
+  positions?: {
     support: PositionAnalysis;
     oppose: PositionAnalysis;
     mixed: PositionAnalysis;
   };
+
+  // For pra_notice type: PRA factors
+  praFactors?: PRAFactors;
+
+  // For rfi type: question-based responses
+  rfiQuestions?: RFIQuestion[];
+
+  // For general type: issue-based cards
+  issueCards?: ReasonCard[];
+
+  // Metadata (added by system, not AI)
   openForComment?: boolean; // Live status from Regulations.gov
   commentEndDate?: string; // ISO timestamp of comment deadline from API (e.g., "2025-12-16T04:59:59Z")
   objectType?: 'document' | 'docket'; // Type for correct Regulations.gov URL
@@ -252,6 +310,8 @@ export interface ArgumentCategory {
 // ============================================================
 
 const MOCK_DOCKET_ANALYSIS: DocketAnalysis = {
+  noticeType: 'pra_notice', // Mock data represents a PRA notice
+
   summary: "CBP proposes significant changes to the ESTA and I-94 systems, including mandatory selfie photos, decommissioning the ESTA website in favor of mobile-only applications, requiring 5 years of social media history, and collecting extensive personal data about applicants and their families. The agency also plans a voluntary self-reported exit pilot program using the CBP Home app.",
 
   commentingInstructions: {
@@ -269,222 +329,186 @@ const MOCK_DOCKET_ANALYSIS: DocketAnalysis = {
     submissionMethodsDescription: "Comments may be submitted online at regulations.gov or by mail to U.S. Customs and Border Protection, Office of Trade, Regulations and Rulings, Attn: Trade and Border Security Division, 90 K Street NE, 10th Floor, Washington, DC 20229-1177."
   },
 
-  positions: {
-    support: {
-      position: 'support',
-      summary: "Supporters believe enhanced security measures, including biometric verification and comprehensive vetting, are necessary to protect national security and prevent fraud in the visa waiver program.",
+  // PRA factors for pra_notice type
+  praFactors: {
+    necessity: {
+      summary: "Questions whether the proposed information collection is necessary for the agency to perform its functions.",
       reasonCards: [
         {
-          id: 'sup-security',
-          topic: 'Enhanced Security Verification',
-          icon: 'shield',
-          arguments: [
-            {
-              id: 'sup-sec-1',
-              label: 'Biometric verification prevents identity fraud',
-              expansion: 'The proposed facial recognition and liveness detection features will significantly reduce the ability of bad actors to submit fraudulent applications using stolen or fabricated identities, addressing documented exploitation of the current ESTA website.'
-            },
-            {
-              id: 'sup-sec-2',
-              label: 'NFC chip validation ensures passport authenticity',
-              expansion: 'Requiring mobile-based e-Chip validation addresses the documented vulnerability where facilitators have created hundreds of fraudulent ESTAs using uploaded fraudulent passport bio pages.'
-            },
-            {
-              id: 'sup-sec-3',
-              label: 'Social media vetting aligns with national security needs',
-              expansion: 'The collection of social media information supports the legitimate governmental interest in screening for potential security threats, consistent with Executive Order 14161 requirements.'
-            }
-          ]
-        },
-        {
-          id: 'sup-fraud',
-          topic: 'Fraud Prevention',
-          icon: 'verified_user',
-          arguments: [
-            {
-              id: 'sup-fraud-1',
-              label: 'Eliminates third-party fraudulent website problem',
-              expansion: 'Moving to mobile-only ESTA applications will effectively eliminate the documented problem of fraudulent third-party websites that charge exorbitant fees and fail to properly submit applications.'
-            },
-            {
-              id: 'sup-fraud-2',
-              label: 'Poor quality uploads can no longer bypass screening',
-              expansion: 'The NTC TASU case study documenting over 2,400 poor quality uploads and 8,000 invalid photos demonstrates a clear vulnerability that mobile-based live capture would address.'
-            }
-          ]
-        },
-        {
-          id: 'sup-efficiency',
-          topic: 'Program Efficiency',
-          icon: 'speed',
-          arguments: [
-            {
-              id: 'sup-eff-1',
-              label: 'Voluntary exit reporting closes information gaps',
-              expansion: 'The VSRE pilot will help CBP reconcile entry and exit records, providing more accurate data on visa compliance and reducing incorrect overstay determinations that can harm legitimate travelers.'
-            },
-            {
-              id: 'sup-eff-2',
-              label: 'Mobile technology provides superior verification',
-              expansion: 'The ESTA Mobile application offers technologically superior identity verification through liveness detection, facial recognition, and NFC-based passport scanning that the website cannot match.'
-            }
-          ]
-        }
-      ]
-    },
-
-    oppose: {
-      position: 'oppose',
-      summary: "Opponents argue the proposals are unnecessarily invasive, create significant barriers to travel, impose disproportionate burdens on applicants, and raise serious privacy and civil liberties concerns.",
-      reasonCards: [
-        {
-          id: 'opp-necessity',
-          topic: 'Necessity & Practical Utility',
+          id: 'pra-nec-1',
+          topic: 'Data Collection Exceeds Purpose',
           icon: 'lightbulb',
           arguments: [
             {
-              id: 'opp-nec-1',
+              id: 'pra-nec-1-1',
               label: 'Data collection is excessive for stated purpose',
               expansion: 'The collection of DNA, 10 years of email history, and extensive family member data far exceeds what is necessary for determining travel authorization eligibility, violating the principle of data minimization under the PRA.'
             },
             {
-              id: 'opp-nec-2',
+              id: 'pra-nec-1-2',
               label: 'No evidence linking family data to security outcomes',
               expansion: 'The agency has failed to demonstrate how collecting family members\' phone numbers, dates of birth, and residency information has practical utility for security screening that outweighs the privacy intrusion.'
             },
             {
-              id: 'opp-nec-3',
+              id: 'pra-nec-1-3',
               label: 'IP metadata collection lacks clear security nexus',
               expansion: 'The proposal to collect IP addresses and metadata from submitted photos has no demonstrated connection to determining whether an individual poses a security risk.'
             }
           ]
         },
         {
-          id: 'opp-burden',
-          topic: 'Accuracy of Burden Estimates',
+          id: 'pra-nec-2',
+          topic: 'Legitimate Security Functions',
+          icon: 'shield',
+          arguments: [
+            {
+              id: 'pra-nec-2-1',
+              label: 'Biometric verification prevents identity fraud',
+              expansion: 'The proposed facial recognition and liveness detection features will significantly reduce the ability of bad actors to submit fraudulent applications using stolen or fabricated identities.'
+            },
+            {
+              id: 'pra-nec-2-2',
+              label: 'NFC chip validation ensures passport authenticity',
+              expansion: 'Requiring mobile-based e-Chip validation addresses the documented vulnerability where facilitators have created hundreds of fraudulent ESTAs using uploaded fraudulent passport bio pages.'
+            }
+          ]
+        }
+      ]
+    },
+    burdenAccuracy: {
+      summary: "Evaluates whether the agency's burden estimates are accurate and whether the methodology is sound.",
+      reasonCards: [
+        {
+          id: 'pra-bur-1',
+          topic: 'Time Estimates Understated',
           icon: 'timer',
           arguments: [
             {
-              id: 'opp-bur-1',
+              id: 'pra-bur-1-1',
               label: '22-minute estimate is grossly understated',
               expansion: 'The estimate of 22 minutes per ESTA Mobile application is factually incorrect; compiling 5 years of social media accounts, 10 years of email addresses, and detailed information about multiple family members will likely require hours.'
             },
             {
-              id: 'opp-bur-2',
+              id: 'pra-bur-1-2',
               label: 'Burden methodology ignores record retrieval time',
               expansion: 'The agency\'s burden calculation fails to account for the significant time required to retrieve historical phone numbers, email addresses, and contact information spanning 5-10 years.'
             }
           ]
         },
         {
-          id: 'opp-access',
-          topic: 'Access & Digital Divide',
-          icon: 'smartphone',
+          id: 'pra-bur-2',
+          topic: 'Hidden Costs Not Calculated',
+          icon: 'calculate',
           arguments: [
             {
-              id: 'opp-acc-1',
-              label: 'Mobile-only requirement excludes vulnerable populations',
-              expansion: 'Decommissioning the ESTA website creates an unreasonable barrier for elderly travelers, those with disabilities affecting smartphone use, and travelers from regions with limited smartphone penetration.'
+              id: 'pra-bur-2-1',
+              label: 'Technology requirements impose additional costs',
+              expansion: 'The mobile-only mandate requiring NFC chip verification fails to account for costs imposed on travelers who must purchase NFC-capable smartphones to comply with ESTA requirements.'
             },
             {
-              id: 'opp-acc-2',
-              label: 'No accommodation for travelers without NFC-capable phones',
-              expansion: 'The mobile-only mandate requiring NFC chip verification fails to provide alternatives for the significant population of international travelers who do not possess NFC-capable smartphones.'
-            },
-            {
-              id: 'opp-acc-3',
-              label: 'Website alternative achieves security with less exclusion',
-              expansion: 'Rather than eliminating the website entirely, the agency could implement improved photo quality checks and additional verification steps on the website while preserving access for those unable to use mobile applications.'
-            }
-          ]
-        },
-        {
-          id: 'opp-privacy',
-          topic: 'Privacy & Civil Liberties',
-          icon: 'lock',
-          arguments: [
-            {
-              id: 'opp-priv-1',
-              label: 'Social media requirement chills free expression',
-              expansion: 'Mandatory disclosure of 5 years of social media accounts will have a chilling effect on travelers\' protected speech and association, as individuals may self-censor or avoid participation in lawful online communities.'
-            },
-            {
-              id: 'opp-priv-2',
-              label: 'Family data collection violates third-party privacy',
-              expansion: 'Requiring applicants to provide detailed personal information about parents, siblings, spouses, and children implicates the privacy rights of individuals who have not consented to government collection of their data.'
-            },
-            {
-              id: 'opp-priv-3',
-              label: 'Biometric collection creates surveillance concerns',
-              expansion: 'The collection of facial images, fingerprints, iris scans, and DNA creates a comprehensive biometric database with significant potential for mission creep and surveillance beyond the stated travel authorization purpose.'
+              id: 'pra-bur-2-2',
+              label: 'Third-party assistance costs not included',
+              expansion: 'Many travelers will need to pay for third-party assistance to navigate the complex application requirements, adding costs not captured in burden estimates.'
             }
           ]
         }
       ]
     },
-
-    mixed: {
-      position: 'mixed',
-      summary: "A balanced perspective acknowledges legitimate security concerns while advocating for narrower data collection, preserved access alternatives, and stronger privacy safeguards.",
+    quality: {
+      summary: "Suggests ways to enhance the quality, utility, and clarity of the information to be collected.",
       reasonCards: [
         {
-          id: 'mix-security',
-          topic: 'Targeted Security Improvements',
-          icon: 'tune',
+          id: 'pra-qual-1',
+          topic: 'Data Quality Concerns',
+          icon: 'fact_check',
           arguments: [
             {
-              id: 'mix-sec-1',
-              label: 'Support mobile verification, oppose website elimination',
-              expansion: 'While mobile-based identity verification offers security benefits, the agency should maintain the ESTA website with enhanced verification measures rather than eliminating access for those unable to use mobile applications.'
+              id: 'pra-qual-1-1',
+              label: 'Historical data accuracy cannot be verified',
+              expansion: 'Requiring 10 years of email addresses and 5 years of phone numbers may result in inaccurate data, as applicants cannot reliably recall or verify information from that far back.'
             },
             {
-              id: 'mix-sec-2',
-              label: 'NFC validation is reasonable; social media overreaches',
-              expansion: 'Passport chip validation represents a proportionate security measure, but mandatory social media disclosure for 5 years lacks demonstrated security necessity and should be voluntary or eliminated.'
+              id: 'pra-qual-1-2',
+              label: 'Social media information may be incomplete or misleading',
+              expansion: 'Social media account disclosure does not account for deleted accounts, pseudonymous use, or platforms no longer in existence, potentially yielding incomplete security assessments.'
             }
           ]
         },
         {
-          id: 'mix-data',
-          topic: 'Data Minimization',
+          id: 'pra-qual-2',
+          topic: 'Form Clarity Issues',
+          icon: 'edit_document',
+          arguments: [
+            {
+              id: 'pra-qual-2-1',
+              label: 'Ambiguous definitions may confuse applicants',
+              expansion: 'Terms like "social media accounts" and "family members" require clearer definitions to ensure consistent and accurate responses across applicants.'
+            },
+            {
+              id: 'pra-qual-2-2',
+              label: 'Instructions need plain-language revision',
+              expansion: 'Application instructions should be revised using plain language principles to ensure non-native English speakers can accurately complete the required fields.'
+            }
+          ]
+        }
+      ]
+    },
+    burdenMinimization: {
+      summary: "Recommends ways to minimize the burden of the collection on respondents, including use of technology.",
+      reasonCards: [
+        {
+          id: 'pra-min-1',
+          topic: 'Preserve Access Alternatives',
+          icon: 'smartphone',
+          arguments: [
+            {
+              id: 'pra-min-1-1',
+              label: 'Mobile-only requirement excludes vulnerable populations',
+              expansion: 'Decommissioning the ESTA website creates an unreasonable barrier for elderly travelers, those with disabilities affecting smartphone use, and travelers from regions with limited smartphone penetration.'
+            },
+            {
+              id: 'pra-min-1-2',
+              label: 'Website alternative achieves security with less exclusion',
+              expansion: 'Rather than eliminating the website entirely, the agency could implement improved photo quality checks and additional verification steps while preserving access for those unable to use mobile applications.'
+            }
+          ]
+        },
+        {
+          id: 'pra-min-2',
+          topic: 'Reduce Data Collection Scope',
           icon: 'filter_list',
           arguments: [
             {
-              id: 'mix-data-1',
+              id: 'pra-min-2-1',
               label: 'Limit family data to immediate household members',
               expansion: 'If family information has legitimate security value, the collection should be limited to immediate household members rather than extending to all parents, siblings, and children regardless of residence.'
             },
             {
-              id: 'mix-data-2',
+              id: 'pra-min-2-2',
               label: 'Reduce email/phone lookback to 2 years',
-              expansion: 'The 10-year lookback for email addresses and 5-year lookback for phone numbers is excessive; a 2-year window would capture relevant current information while reducing burden and privacy intrusion.'
+              expansion: 'The 10-year lookback for email addresses and 5-year lookback for phone numbers is excessive; a 2-year window would capture relevant current information while reducing burden.'
             },
             {
-              id: 'mix-data-3',
+              id: 'pra-min-2-3',
               label: 'DNA collection should require specific justification',
               expansion: 'DNA collection is appropriate only where specific security concerns exist, not as a blanket requirement for all ESTA applicants.'
             }
           ]
         },
         {
-          id: 'mix-implementation',
+          id: 'pra-min-3',
           topic: 'Implementation Safeguards',
           icon: 'policy',
           arguments: [
             {
-              id: 'mix-impl-1',
-              label: 'Require clear data retention and deletion policies',
-              expansion: 'The agency should establish and publish specific retention periods and deletion procedures for the expanded data collection, particularly for biometric data and social media information.'
-            },
-            {
-              id: 'mix-impl-2',
+              id: 'pra-min-3-1',
               label: 'Provide phase-in period for mobile transition',
-              expansion: 'Rather than immediate website decommissioning, implement a 2-year transition period allowing travelers to adapt and ensuring mobile application reliability before eliminating alternatives.'
+              expansion: 'Rather than immediate website decommissioning, implement a 2-year transition period allowing travelers to adapt and ensuring mobile application reliability.'
             },
             {
-              id: 'mix-impl-3',
-              label: 'Establish independent oversight for data use',
-              expansion: 'Given the sensitivity of the expanded data collection, the agency should establish independent oversight mechanisms to ensure data is used only for stated travel authorization purposes.'
+              id: 'pra-min-3-2',
+              label: 'Require clear data retention and deletion policies',
+              expansion: 'The agency should establish and publish specific retention periods and deletion procedures for the expanded data collection, particularly for biometric data.'
             }
           ]
         }
@@ -545,22 +569,32 @@ export async function analyzeDocket(docketText: string): Promise<DocketAnalysis>
 /**
  * Regenerate arguments for a specific reason card.
  * Used when user wants fresh arguments for a particular topic.
+ * Supports both position-based (proposed_rule) and factor-based (pra_notice) structures.
  */
 export async function regenerateReasonCard(
   docketText: string,
-  position: Position,
+  positionOrFactor: Position | PRAFactor,
   cardTopic: string,
-  existingArguments: string[] // Labels of arguments to avoid repeating
+  existingArguments: string[], // Labels of arguments to avoid repeating
+  noticeType: NoticeType = 'proposed_rule'
 ): Promise<ReasonCard> {
-  console.log(`[ai-generator] regenerateReasonCard: position=${position}, topic=${cardTopic}`);
+  console.log(`[ai-generator] regenerateReasonCard: type=${noticeType}, positionOrFactor=${positionOrFactor}, topic=${cardTopic}`);
 
   if (!API_KEY) {
     console.log("[ai-generator] GEMINI_API_KEY not found, returning mock regeneration");
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Return a slightly modified version of existing mock data
-    const mockPosition = MOCK_DOCKET_ANALYSIS.positions[position];
-    const existingCard = mockPosition.reasonCards.find(c => c.topic === cardTopic);
+    // Get mock cards based on notice type
+    let mockCards: ReasonCard[] = [];
+    if (noticeType === 'pra_notice' && MOCK_DOCKET_ANALYSIS.praFactors) {
+      const factor = positionOrFactor as PRAFactor;
+      mockCards = MOCK_DOCKET_ANALYSIS.praFactors[factor]?.reasonCards || [];
+    } else if (MOCK_DOCKET_ANALYSIS.positions) {
+      const position = positionOrFactor as Position;
+      mockCards = MOCK_DOCKET_ANALYSIS.positions[position]?.reasonCards || [];
+    }
+
+    const existingCard = mockCards.find(c => c.topic === cardTopic);
     if (existingCard) {
       return {
         ...existingCard,
@@ -572,7 +606,12 @@ export async function regenerateReasonCard(
         }))
       };
     }
-    return mockPosition.reasonCards[0];
+    return mockCards[0] || {
+      id: `fallback-${Date.now()}`,
+      topic: cardTopic,
+      icon: 'help_outline',
+      arguments: []
+    };
   }
 
   const genAI = new GoogleGenerativeAI(API_KEY);
@@ -580,9 +619,10 @@ export async function regenerateReasonCard(
 
   const prompt = await loadPrompt("regenerateReasonCard", {
     docketText,
-    position,
+    position: positionOrFactor,
     cardTopic,
-    existingArguments: existingArguments.join('\n')
+    existingArguments: existingArguments.join('\n'),
+    noticeType
   });
 
   try {
@@ -592,32 +632,42 @@ export async function regenerateReasonCard(
     return JSON.parse(jsonStr);
   } catch (error) {
     console.error("[ai-generator] Error regenerating reason card:", error);
-    // Fallback to mock
-    const mockPosition = MOCK_DOCKET_ANALYSIS.positions[position];
-    return mockPosition.reasonCards[0];
+    // Fallback to empty card
+    return {
+      id: `error-${Date.now()}`,
+      topic: cardTopic,
+      icon: 'warning',
+      arguments: []
+    };
   }
 }
 
 /**
  * Second AI call - Generate the final formatted comment based on user selections.
+ * Supports different notice types with appropriate framing.
  */
 export async function generateFinalComment(
   docketText: string,
   commentingInstructions: CommentingInstructions,
-  position: Position,
   selectedArguments: ArgumentOption[],
   personalContext: {
     isExpert: boolean;
     affectsLivelihood: boolean;
     customText?: string;
-  }
+  },
+  options: {
+    noticeType?: NoticeType;
+    position?: Position; // Only for proposed_rule
+    praFactor?: PRAFactor; // Only for pra_notice (which factors were addressed)
+  } = {}
 ): Promise<string> {
-  console.log(`[ai-generator] generateFinalComment: position=${position}, args=${selectedArguments.length}`);
+  const { noticeType = 'proposed_rule', position } = options;
+  console.log(`[ai-generator] generateFinalComment: noticeType=${noticeType}, position=${position}, args=${selectedArguments.length}`);
 
   if (!API_KEY) {
     console.log("[ai-generator] GEMINI_API_KEY not found, using template-based generation");
     await new Promise(resolve => setTimeout(resolve, 1500));
-    return buildTemplateComment(position, selectedArguments, personalContext);
+    return buildTemplateComment(selectedArguments, personalContext, { noticeType, position });
   }
 
   const genAI = new GoogleGenerativeAI(API_KEY);
@@ -625,9 +675,10 @@ export async function generateFinalComment(
 
   const prompt = await loadPrompt("generateFinalComment", {
     docketText: docketText.slice(0, 2000),
-    format: commentingInstructions.format || 'Address the PRA factors',
-    requiredPoints: commentingInstructions.requiredPoints?.join('; ') || 'Standard PRA factors',
-    position,
+    format: commentingInstructions.format || 'Address the relevant factors',
+    requiredPoints: commentingInstructions.requiredPoints?.join('; ') || 'Standard evaluation criteria',
+    noticeType,
+    position: position || 'N/A',
     selectedArguments: selectedArguments.map((a, i) => `${i + 1}. ${a.label}: ${a.expansion}`).join('\n\n'),
     isExpert: String(personalContext.isExpert),
     affectsLivelihood: String(personalContext.affectsLivelihood),
@@ -641,22 +692,27 @@ export async function generateFinalComment(
     return text;
   } catch (error) {
     console.error("[ai-generator] Error generating final comment:", error);
-    return buildTemplateComment(position, selectedArguments, personalContext);
+    return buildTemplateComment(selectedArguments, personalContext, { noticeType, position });
   }
 }
 
 /**
  * Fallback template-based comment builder (no AI)
+ * Supports different notice types with appropriate framing.
  */
 function buildTemplateComment(
-  position: Position,
   selectedArguments: ArgumentOption[],
   personalContext: {
     isExpert: boolean;
     affectsLivelihood: boolean;
     customText?: string;
-  }
+  },
+  options: {
+    noticeType?: NoticeType;
+    position?: Position;
+  } = {}
 ): string {
+  const { noticeType = 'proposed_rule', position } = options;
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -667,14 +723,25 @@ function buildTemplateComment(
 
 To Whom It May Concern:
 
-I am writing to submit my public comment on this proposed rulemaking. `;
+`;
 
-  if (position === 'support') {
-    comment += `I write in support of the proposed rule, with specific observations on its implementation.\n\n`;
-  } else if (position === 'oppose') {
-    comment += `I respectfully oppose the proposed rule as currently written for the following reasons.\n\n`;
+  // Opening based on notice type
+  if (noticeType === 'pra_notice') {
+    comment += `I am writing to submit comments on this proposed information collection request pursuant to the Paperwork Reduction Act of 1995. My comments address the following PRA factors.\n\n`;
+  } else if (noticeType === 'rfi') {
+    comment += `I am writing to respond to this Request for Information. My comments address the questions posed by the agency.\n\n`;
+  } else if (noticeType === 'general') {
+    comment += `I am writing to submit my comments on this federal notice.\n\n`;
   } else {
-    comment += `While I appreciate the agency's objectives, I have both supportive observations and significant concerns that warrant consideration.\n\n`;
+    // proposed_rule - use position-based framing
+    comment += `I am writing to submit my public comment on this proposed rulemaking. `;
+    if (position === 'support') {
+      comment += `I write in support of the proposed rule, with specific observations on its implementation.\n\n`;
+    } else if (position === 'oppose') {
+      comment += `I respectfully oppose the proposed rule as currently written for the following reasons.\n\n`;
+    } else {
+      comment += `While I appreciate the agency's objectives, I have both supportive observations and significant concerns that warrant consideration.\n\n`;
+    }
   }
 
   if (personalContext.isExpert || personalContext.affectsLivelihood) {
@@ -683,12 +750,19 @@ I am writing to submit my public comment on this proposed rulemaking. `;
       comment += `I am a subject matter expert with direct knowledge of the issues addressed by this proposal. `;
     }
     if (personalContext.affectsLivelihood) {
-      comment += `This regulation will directly impact my professional livelihood and business operations. `;
+      comment += `This matter will directly impact my professional livelihood and operations. `;
     }
     comment += `\n\n`;
   }
 
-  comment += `SUBSTANTIVE COMMENTS\n\n`;
+  // Section header based on notice type
+  if (noticeType === 'pra_notice') {
+    comment += `COMMENTS ON PRA FACTORS\n\n`;
+  } else if (noticeType === 'rfi') {
+    comment += `RESPONSES TO AGENCY QUESTIONS\n\n`;
+  } else {
+    comment += `SUBSTANTIVE COMMENTS\n\n`;
+  }
 
   selectedArguments.forEach((arg, index) => {
     comment += `${index + 1}. ${arg.label}\n\n${arg.expansion}\n\n`;
@@ -698,7 +772,7 @@ I am writing to submit my public comment on this proposed rulemaking. `;
     comment += `ADDITIONAL COMMENTS\n\n${personalContext.customText}\n\n`;
   }
 
-  comment += `CONCLUSION\n\nFor the foregoing reasons, I urge the agency to carefully consider these comments in its deliberations. Thank you for the opportunity to participate in this rulemaking process.
+  comment += `CONCLUSION\n\nFor the foregoing reasons, I urge the agency to carefully consider these comments in its deliberations. Thank you for the opportunity to participate in this process.
 
 Respectfully submitted,
 
@@ -720,11 +794,32 @@ export async function generateArgumentsWithAI(
   console.log(`[ai-generator] LEGACY generateArgumentsWithAI called - redirecting to analyzeDocket`);
 
   const analysis = await analyzeDocket(docketText);
-  const positionKey = stance as Position;
-  const positionData = analysis.positions[positionKey] || analysis.positions.oppose;
 
-  // Convert new format to legacy format
-  return positionData.reasonCards.map(card => ({
+  // Handle different notice types
+  let reasonCards: ReasonCard[] = [];
+
+  if (analysis.noticeType === 'pra_notice' && analysis.praFactors) {
+    // For PRA notices, combine all factor cards
+    reasonCards = [
+      ...analysis.praFactors.necessity.reasonCards,
+      ...analysis.praFactors.burdenAccuracy.reasonCards,
+      ...analysis.praFactors.quality.reasonCards,
+      ...analysis.praFactors.burdenMinimization.reasonCards
+    ];
+  } else if (analysis.noticeType === 'rfi' && analysis.rfiQuestions) {
+    // For RFI, combine all question response cards
+    reasonCards = analysis.rfiQuestions.flatMap(q => q.responseCards);
+  } else if (analysis.noticeType === 'general' && analysis.issueCards) {
+    reasonCards = analysis.issueCards;
+  } else if (analysis.positions) {
+    // For proposed_rule, use position-based cards
+    const positionKey = stance as Position;
+    const positionData = analysis.positions[positionKey] || analysis.positions.oppose;
+    reasonCards = positionData.reasonCards;
+  }
+
+  // Convert to legacy format
+  return reasonCards.map(card => ({
     id: card.id,
     title: card.topic,
     icon: card.icon,

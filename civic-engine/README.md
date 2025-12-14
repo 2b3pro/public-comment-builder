@@ -78,13 +78,18 @@ The app uses a streamlined two-call AI pattern:
    - Commenting instructions (deadlines, format, submission methods)
    - Submission email extraction (if agency accepts email comments)
    - Deadline date extraction for comment period validation
-   - Reason cards for all three positions (support, oppose, mixed)
+   - **Notice type detection** (proposed_rule, pra_notice, rfi, or general)
+   - Response framework appropriate to the notice type:
+     - **Proposed Rules**: Support/oppose/mixed positions with reason cards
+     - **PRA Notices**: Four PRA factor categories (necessity, burden accuracy, quality, burden minimization)
+     - **RFIs/ANPRMs**: Question-based response cards
+     - **General Notices**: Issue-based response cards
 
 2. **Second Call (Generate Comment)** - After you select arguments, the AI drafts a formal comment incorporating:
    - Your selected reason cards
    - Personal context and expertise
    - Custom text you've added
-   - Proper formatting for regulatory proceedings
+   - Proper formatting based on the notice type
 
 ### Data & Stats
 
