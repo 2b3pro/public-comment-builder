@@ -101,9 +101,13 @@ STEP 4: GENERATE RESPONSE FRAMEWORK (BASED ON NOTICE TYPE)
 **IF noticeType = "proposed_rule":**
 Generate traditional position-based reason cards.
 
-For EACH position (support, oppose, mixed):
-• Provide 6–8 reason cards, ranked from strongest to weakest
-• Align to federal evaluation criteria:
+**CRITICAL: ARGUMENTS-FIRST APPROACH**
+For EACH position (support, oppose, mixed), follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 10–15 specific, substantive arguments for this position
+• Each argument should reference a specific provision, assumption, estimate, or mechanism in the docket
+• Draw from these federal evaluation criteria as inspiration:
   1. Problem definition & necessity
   2. Scientific, technical, or economic assumptions
   3. Cost-benefit balance
@@ -112,18 +116,39 @@ For EACH position (support, oppose, mixed):
   6. Non-monetizable impacts (privacy, dignity, equity)
   7. Implementation feasibility
 
+STEP B - Cluster Into Categories:
+• Group the arguments into 3–5 thematic reason cards
+• Each reason card MUST have at least 2 arguments (preferably 3–4)
+• If a potential argument would be alone in its category, either:
+  – Merge it with a related category, OR
+  – Combine it with similar arguments to form a broader theme
+• Do NOT create reason cards with only 1 argument
+• Rank cards from strongest to weakest impact
+
 Each reason card includes:
 - id (e.g., "sup-cost-1", "opp-impl-2")
-- topic (short title)
+- topic (short title capturing the theme)
 - icon (Material Symbol)
-- arguments (array of {id, label, expansion})
+- arguments (array of {id, label, expansion}) — minimum 2 per card
 
 ──────────────────────────────────────────────────────────────────
 
 **IF noticeType = "pra_notice":**
 Generate PRA factor-based response cards. DO NOT generate support/oppose positions.
 
-Instead, generate `praFactors` object with four categories:
+**CRITICAL: ARGUMENTS-FIRST APPROACH**
+For EACH of the four PRA factors, follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 4–8 specific arguments relevant to this PRA factor
+• Each argument should reference specific data points, burden estimates, or collection requirements from the docket
+
+STEP B - Cluster Into Categories:
+• Group arguments into 2–4 reason cards per factor
+• Each reason card MUST have at least 2 arguments
+• Do NOT create reason cards with only 1 argument
+
+Generate `praFactors` object with four categories:
 
 1. **necessity** - Whether the collection is necessary
    - Is this information already available elsewhere?
@@ -145,11 +170,11 @@ Instead, generate `praFactors` object with four categories:
    - Are there simpler ways to gather this information?
    - Could frequency of collection be reduced?
 
-Each PRA factor category contains:
+Each PRA factor category contains reason cards with:
 - id (e.g., "pra-nec-1")
 - topic (short title)
 - icon (Material Symbol)
-- arguments (array of {id, label, expansion})
+- arguments (array of {id, label, expansion}) — minimum 2 per card
 
 ──────────────────────────────────────────────────────────────────
 
@@ -157,6 +182,18 @@ Each PRA factor category contains:
 Generate question-based response cards. DO NOT generate support/oppose positions.
 
 First, extract the specific questions the agency is asking (look for numbered questions, bullet points asking for input, or sections titled "Questions for Comment").
+
+**CRITICAL: ARGUMENTS-FIRST APPROACH**
+For EACH question, follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 4–8 specific response points for this question
+• Each should offer substantive input the agency can act upon
+
+STEP B - Cluster Into Categories:
+• Group response points into 2–3 response cards per question
+• Each response card MUST have at least 2 arguments
+• Do NOT create response cards with only 1 argument
 
 Then generate `rfiQuestions` array where each item represents a question with:
 - questionNumber (the original number, or 1, 2, 3 if unnumbered)
@@ -167,18 +204,30 @@ Each response card has:
 - id (e.g., "rfi-q1-1")
 - topic (short response angle)
 - icon (Material Symbol)
-- arguments (array of {id, label, expansion})
+- arguments (array of {id, label, expansion}) — minimum 2 per card
 
 ──────────────────────────────────────────────────────────────────
 
 **IF noticeType = "general":**
 Generate issue-based response cards without position framing.
 
+**CRITICAL: ARGUMENTS-FIRST APPROACH**
+Follow this two-step process:
+
+STEP A - Generate Arguments First:
+• Brainstorm 8–12 specific response points relevant to the notice
+• Each should offer substantive, actionable input
+
+STEP B - Cluster Into Categories:
+• Group arguments into 3–5 issue cards
+• Each issue card MUST have at least 2 arguments
+• Do NOT create issue cards with only 1 argument
+
 Generate `issueCards` array of general response angles:
 - id (e.g., "gen-impl-1")
 - topic (the issue being addressed)
 - icon (Material Symbol)
-- arguments (array of {id, label, expansion})
+- arguments (array of {id, label, expansion}) — minimum 2 per card
 
 ════════════════════════════════════════════════════════════════════
 STEP 5: REASON CARD STRUCTURE (ALL TYPES)
@@ -192,10 +241,11 @@ Every reason/response card, regardless of notice type, must include:
 • **Icon Tag** - Choose ONE Material Symbol:
   shield · lock · timer · lightbulb · verified_user · speed · smartphone · tune · filter_list · policy · gavel · description · trending_up · visibility · groups · balance · warning · calculate · fact_check · edit_document · help_outline
 
-• **Arguments (2–4 per card)** - Each must:
+• **Arguments (MINIMUM 2, preferably 3–4 per card)** - Each must:
   – Reference a specific provision, assumption, estimate, or mechanism
   – Explain why it matters legally or practically
   – Be phrased in formal, substantive language
+  – NEVER create a card with only 1 argument; merge orphan arguments into related cards
 
 • **Lived-Experience Hook** - 1–2 sentences explaining how someone might credibly support this argument with real-world experience
 
