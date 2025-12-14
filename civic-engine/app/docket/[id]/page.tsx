@@ -313,7 +313,7 @@ export default function DocketPage() {
             <div className="mb-6">
               <span className="material-symbols-outlined text-6xl text-primary animate-pulse">psychology</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Analyzing Regulation</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Analyzing...</h2>
             <p className="text-gray-500 text-sm max-w-xs mx-auto">
               Our AI is reading the docket and preparing structured arguments for all positions...
             </p>
@@ -413,11 +413,10 @@ export default function DocketPage() {
                       href={`https://www.regulations.gov/commenton/${encodeURIComponent(docketId)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center justify-center gap-2 w-full font-bold py-3.5 px-4 rounded-xl transition-colors ${
-                        hasEmailSubmission
+                      className={`flex items-center justify-center gap-2 w-full font-bold py-3.5 px-4 rounded-xl transition-colors ${hasEmailSubmission
                           ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           : 'bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30'
-                      }`}
+                        }`}
                       onClick={() => setShowCopyModal(false)}
                     >
                       {hasEmailSubmission ? 'Or Submit Online' : 'Go to Submission Page'}
@@ -503,6 +502,12 @@ export default function DocketPage() {
                 "Please refer to the official docket for submission instructions."
               }
               documentUrl={`https://www.regulations.gov/${analysis?.objectType || 'document'}/${encodeURIComponent(docketId)}`}
+              deadline={
+                analysis?.commentingInstructions?.deadline ||
+                (analysis?.commentEndDate ? new Date(analysis.commentEndDate).toLocaleDateString('en-US', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                }) : undefined)
+              }
             />
           </div>
 

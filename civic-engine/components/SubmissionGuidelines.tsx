@@ -6,6 +6,7 @@ interface SubmissionGuidelinesProps {
   agencyName: string;
   instructions?: string;
   documentUrl?: string;
+  deadline?: string; // Human-readable deadline or ISO date
   className?: string;
 }
 
@@ -14,6 +15,7 @@ export const SubmissionGuidelines: React.FC<SubmissionGuidelinesProps> = ({
   agencyName,
   instructions,
   documentUrl,
+  deadline,
   className
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,30 +54,22 @@ export const SubmissionGuidelines: React.FC<SubmissionGuidelinesProps> = ({
               <li>Docket No.: <strong>{docketId}</strong></li>
             </ul>
           </div>
-          
+
+          {deadline && (
+            <div className="mt-3 pt-3 border-t border-blue-200/50">
+              <p className="font-medium mb-1 flex items-center gap-2">
+                <span className="material-symbols-outlined text-red-500 text-base">schedule</span>
+                Comment Deadline:
+              </p>
+              <p className="text-gray-700 font-medium">{deadline}</p>
+            </div>
+          )}
+
           {instructions && (
             <div className="mt-3 pt-3 border-t border-blue-200/50">
               <p className="font-medium mb-1">Official Instructions:</p>
-              <div className="prose prose-sm text-gray-600 max-w-none">
-                 {/* 
-                    In a real app, we'd sanitize HTML here if instructions contains HTML. 
-                    For now, we assume text or basic HTML handled safely or rendered as text.
-                 */}
-                {instructions.length > 300 ? (
-                  <>
-                    {instructions.slice(0, 300)}...
-                    {documentUrl && (
-                      <a
-                        href={documentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline ml-1"
-                      >
-                        Read full notice
-                      </a>
-                    )}
-                  </>
-                ) : instructions}
+              <div className="prose prose-sm text-gray-600 max-w-none whitespace-pre-wrap">
+                {instructions}
               </div>
             </div>
           )}
