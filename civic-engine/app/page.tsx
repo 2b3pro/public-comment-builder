@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { DocketCard } from '@/components/DocketCard';
 import { getDashboardDockets, searchDockets, refreshDockets, getDocketCommentCounts, getTopRecentDockets, TrendingDocket, warmDocketCache } from '@/app/actions';
 import { DocketSummary } from '@/lib/regulations-api';
@@ -163,6 +164,14 @@ export default function Dashboard() {
       {/* Hero Search Section */}
       <section className="bg-white border-b border-gray-200 p-6 pb-10">
         <div className="max-w-md mx-auto text-center space-y-4">
+          <Image
+            src="/pcb-logo.png"
+            alt="Public Comment Builder"
+            width={120}
+            height={120}
+            className="mx-auto mb-2"
+            priority
+          />
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Make Your Voice Count
           </h1>

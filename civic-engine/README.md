@@ -1,5 +1,9 @@
 # Public Comment Builder
 
+<p align="center">
+  <img src="public/pcb-logo.png" alt="Public Comment Builder Logo" width="150" />
+</p>
+
 A web application that helps citizens draft legally substantive public comments on federal regulations. Instead of writing generic "I support/oppose this" comments that agencies can easily dismiss, this tool helps you craft specific, evidence-based arguments that agencies must meaningfully address.
 
 ## How It Works

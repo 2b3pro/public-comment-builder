@@ -15,16 +15,25 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "/",
+    url: "https://public-comment-builder.vercel.app",
     title: "Public Comment Builder",
     description: "Draft substantive public comments on federal regulations without being a lawyer.",
     siteName: "Public Comment Builder",
+    images: [
+      {
+        url: "/pcb-logo.png",
+        width: 512,
+        height: 512,
+        alt: "Public Comment Builder Logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Public Comment Builder",
     description: "Draft substantive public comments on federal regulations without being a lawyer.",
     creator: "@2b3pro",
+    images: ["/pcb-logo.png"],
   },
   robots: {
     index: true,
