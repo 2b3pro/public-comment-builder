@@ -166,9 +166,9 @@ export async function getDashboardDockets(): Promise<DocketSummary[]> {
     return cached;
   }
 
-  // Fetch from API
+  // Fetch from API (next 15 days to populate 3/7/15 day buckets)
   console.log(`[actions] getDashboardDockets: fetching from API`);
-  const results = await regulationsApi.getDocumentsClosingRange(7);
+  const results = await regulationsApi.getDocumentsClosingRange(15);
   console.log(`[actions] getDashboardDockets: got ${results.length} results`);
 
   // Cache results
@@ -229,8 +229,8 @@ export async function getDocument(id: string): Promise<DocketSummary | null> {
 export async function refreshDockets(): Promise<DocketSummary[]> {
   console.log(`[actions] refreshDockets: fetching fresh from API (cache will be updated)`);
 
-  // Fetch fresh from API
-  const results = await regulationsApi.getDocumentsClosingRange(7);
+  // Fetch fresh from API (next 15 days to populate 3/7/15 day buckets)
+  const results = await regulationsApi.getDocumentsClosingRange(15);
   console.log(`[actions] refreshDockets: got ${results.length} fresh results`);
 
   // Cache the fresh results (overwrites existing cache)

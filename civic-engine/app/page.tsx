@@ -15,15 +15,15 @@ export default function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Data states
-  const [dueToday, setDueToday] = useState<DocketSummary[]>([]);
+  // Data states - buckets aligned with Regulations.gov (3, 7, 15 days)
   const [due3Days, setDue3Days] = useState<DocketSummary[]>([]);
   const [due7Days, setDue7Days] = useState<DocketSummary[]>([]);
+  const [due15Days, setDue15Days] = useState<DocketSummary[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [trendingDockets, setTrendingDockets] = useState<TrendingDocket[]>([]);
 
   const fetchData = useCallback(async () => {
-    // Single efficient call for all dashboard data (next 7 days)
+    // Single efficient call for all dashboard data (next 15 days)
     const allDocs = await getDashboardDockets();
 
     // Dates for filtering
@@ -34,43 +34,50 @@ export default function Dashboard() {
     in3Days.setDate(today.getDate() + 3);
     const in3DaysStr = in3Days.toISOString().split('T')[0];
 
-    // Filter buckets - extract date portion since API returns full ISO timestamps
-    // 1. Due Today
-    const todayDocs = allDocs.filter(d => d.commentEndDate?.split('T')[0] === todayStr);
+    const in7Days = new Date();
+    in7Days.setDate(today.getDate() + 7);
+    const in7DaysStr = in7Days.toISOString().split('T')[0];
 
-    // 2. Due in <= 3 Days (excluding today)
+    // Filter buckets - extract date portion since API returns full ISO timestamps
+    // 1. Closing in 3 days (today through day 3)
     const threeDayDocs = allDocs.filter(d => {
       const endDate = d.commentEndDate?.split('T')[0];
-      return endDate && endDate <= in3DaysStr && endDate > todayStr;
+      return endDate && endDate >= todayStr && endDate <= in3DaysStr;
     });
 
-    // 3. Due in <= 7 Days (rest of week)
+    // 2. Closing in 7 days (day 4 through day 7)
     const sevenDayDocs = allDocs.filter(d => {
       const endDate = d.commentEndDate?.split('T')[0];
-      return endDate && endDate > in3DaysStr;
+      return endDate && endDate > in3DaysStr && endDate <= in7DaysStr;
+    });
+
+    // 3. Closing in 15 days (day 8 through day 15)
+    const fifteenDayDocs = allDocs.filter(d => {
+      const endDate = d.commentEndDate?.split('T')[0];
+      return endDate && endDate > in7DaysStr;
     });
 
     // Apply mock data only in debug mode
-    const finalToday = USE_MOCK && !todayDocs.length ? [MOCK_DOCKET_TODAY] : todayDocs;
     const final3Days = USE_MOCK && !threeDayDocs.length ? [MOCK_DOCKET_3] : threeDayDocs;
     const final7Days = USE_MOCK && !sevenDayDocs.length ? [MOCK_DOCKET_7] : sevenDayDocs;
+    const final15Days = USE_MOCK && !fifteenDayDocs.length ? [MOCK_DOCKET_15] : fifteenDayDocs;
 
-    setDueToday(finalToday);
     setDue3Days(final3Days);
     setDue7Days(final7Days);
+    setDue15Days(final15Days);
 
     // Fetch comment counts for all dockets in a single batch query
-    const allDocketIds = [...finalToday, ...final3Days, ...final7Days].map(d => d.docketId);
+    const allDocketIds = [...final3Days, ...final7Days, ...final15Days].map(d => d.docketId);
     const counts = await getDocketCommentCounts(allDocketIds);
     setCommentCounts(counts);
 
-    // Fetch top trending dockets (by comment count)
-    const trending = await getTopRecentDockets(3);
+    // Fetch top trending dockets (by comment count) - limit to 5
+    const trending = await getTopRecentDockets(5);
     setTrendingDockets(trending);
 
     // Background cache warming: pre-analyze top dockets so users get instant results
-    // Prioritize: today's dockets first, then 3-day, then 7-day
-    const prioritizedDockets = [...finalToday, ...final3Days, ...final7Days];
+    // Prioritize: 3-day dockets first, then 7-day, then 15-day
+    const prioritizedDockets = [...final3Days, ...final7Days, ...final15Days];
     warmDocketCache(prioritizedDockets, 5).catch(err => {
       console.warn('[Dashboard] Cache warming failed:', err);
     });
@@ -95,7 +102,7 @@ export default function Dashboard() {
 
     try {
       // Start independent fetches in parallel
-      const trendingPromise = getTopRecentDockets(3);
+      const trendingPromise = getTopRecentDockets(5);
 
       // Wait for dockets first as filtering depends on it
       const allDocs = await refreshDockets();
@@ -108,28 +115,35 @@ export default function Dashboard() {
       in3Days.setDate(today.getDate() + 3);
       const in3DaysStr = in3Days.toISOString().split('T')[0];
 
+      const in7Days = new Date();
+      in7Days.setDate(today.getDate() + 7);
+      const in7DaysStr = in7Days.toISOString().split('T')[0];
+
       // Filter buckets
-      const todayDocs = allDocs.filter(d => d.commentEndDate?.split('T')[0] === todayStr);
       const threeDayDocs = allDocs.filter(d => {
         const endDate = d.commentEndDate?.split('T')[0];
-        return endDate && endDate <= in3DaysStr && endDate > todayStr;
+        return endDate && endDate >= todayStr && endDate <= in3DaysStr;
       });
       const sevenDayDocs = allDocs.filter(d => {
         const endDate = d.commentEndDate?.split('T')[0];
-        return endDate && endDate > in3DaysStr;
+        return endDate && endDate > in3DaysStr && endDate <= in7DaysStr;
+      });
+      const fifteenDayDocs = allDocs.filter(d => {
+        const endDate = d.commentEndDate?.split('T')[0];
+        return endDate && endDate > in7DaysStr;
       });
 
       // Apply mock data only in debug mode
-      const finalToday = USE_MOCK && !todayDocs.length ? [MOCK_DOCKET_TODAY] : todayDocs;
       const final3Days = USE_MOCK && !threeDayDocs.length ? [MOCK_DOCKET_3] : threeDayDocs;
       const final7Days = USE_MOCK && !sevenDayDocs.length ? [MOCK_DOCKET_7] : sevenDayDocs;
+      const final15Days = USE_MOCK && !fifteenDayDocs.length ? [MOCK_DOCKET_15] : fifteenDayDocs;
 
-      setDueToday(finalToday);
       setDue3Days(final3Days);
       setDue7Days(final7Days);
+      setDue15Days(final15Days);
 
       // Fetch comment counts
-      const allDocketIds = [...finalToday, ...final3Days, ...final7Days].map(d => d.docketId);
+      const allDocketIds = [...final3Days, ...final7Days, ...final15Days].map(d => d.docketId);
       const countsPromise = getDocketCommentCounts(allDocketIds);
 
       // Await remaining promises
@@ -215,13 +229,13 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Trending Dockets - Most Commented */}
+        {/* Recently Commented - Top 5 by comment count */}
         {!searchResults.length && trendingDockets.length > 0 && (
           <details className="animate-fade-in group" open>
             <summary className="list-none cursor-pointer">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-purple-500">trending_up</span>
-                Trending — Most Commented ({trendingDockets.length})
+                <span className="material-symbols-outlined text-purple-500">forum</span>
+                Recently Commented ({trendingDockets.length})
                 <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
                   expand_more
                 </span>
@@ -273,31 +287,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Due Today */}
+        {/* Closing in 3 Days */}
         {!searchResults.length && (
           <details className="animate-slide-up group" open>
             <summary className="list-none cursor-pointer">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-red-600">alarm</span>
-                Closing Today ({dueToday.length})
-                <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
-                  expand_more
-                </span>
-              </h2>
-            </summary>
-            <div className="space-y-4">
-              {dueToday.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
-              {dueToday.length === 0 && <p className="text-sm text-gray-500 italic">No major dockets closing today.</p>}
-            </div>
-          </details>
-        )}
-
-        {/* Due in 3 Days */}
-        {!searchResults.length && (
-          <details className="animate-slide-up delay-100 group" open>
-            <summary className="list-none cursor-pointer">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-orange-500">upcoming</span>
                 Closing in 3 Days ({due3Days.length})
                 <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
                   expand_more
@@ -311,13 +306,13 @@ export default function Dashboard() {
           </details>
         )}
 
-        {/* Featured / Week */}
+        {/* Closing in 7 Days */}
         {!searchResults.length && (
-          <details className="animate-slide-up delay-200 group" open>
+          <details className="animate-slide-up delay-100 group" open>
             <summary className="list-none cursor-pointer">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-500">calendar_month</span>
-                Closing This Week ({due7Days.length})
+                <span className="material-symbols-outlined text-orange-500">upcoming</span>
+                Closing in 7 Days ({due7Days.length})
                 <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
                   expand_more
                 </span>
@@ -325,7 +320,26 @@ export default function Dashboard() {
             </summary>
             <div className="space-y-4">
               {due7Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
-              {due7Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing this week. Use search to find open comment periods.</p>}
+              {due7Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing in the next 7 days.</p>}
+            </div>
+          </details>
+        )}
+
+        {/* Closing in 15 Days */}
+        {!searchResults.length && (
+          <details className="animate-slide-up delay-200 group" open>
+            <summary className="list-none cursor-pointer">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-500">calendar_month</span>
+                Closing in 15 Days ({due15Days.length})
+                <span className="material-symbols-outlined text-gray-400 text-base ml-auto group-open:rotate-180 transition-transform">
+                  expand_more
+                </span>
+              </h2>
+            </summary>
+            <div className="space-y-4">
+              {due15Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
+              {due15Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing in the next 15 days. Use search to find open comment periods.</p>}
             </div>
           </details>
         )}
@@ -334,38 +348,44 @@ export default function Dashboard() {
   );
 }
 
-// Fallback Mock Data for Demo Purposes
-const MOCK_DOCKET_TODAY: DocketSummary = {
+// Fallback Mock Data for Demo Purposes (only used when NEXT_PUBLIC_USE_MOCK=true)
+const getMockDate = (daysFromNow: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  return date.toISOString().split('T')[0];
+};
+
+const MOCK_DOCKET_3: DocketSummary = {
   id: 'FDA-2023-D-0001',
   title: 'Labeling of Plant-Based Milk Alternatives',
   agencyId: 'FDA',
   docketId: 'FDA-2023-D-0001',
   postedDate: '2023-01-01',
-  commentEndDate: new Date().toISOString().split('T')[0],
+  commentEndDate: getMockDate(2),
   subtype: 'Proposed Rule',
   abstract: 'Guidance for industry on labeling.',
   objectType: 'document',
 };
 
-const MOCK_DOCKET_3: DocketSummary = {
+const MOCK_DOCKET_7: DocketSummary = {
   id: 'USCBP-2025-0001',
   title: 'Arrival and Departure Record (Form I-94) and ESTA Revision',
   agencyId: 'CBP',
   docketId: 'USCBP-2025-0001',
   postedDate: '2025-12-01',
-  commentEndDate: '2026-02-09',
+  commentEndDate: getMockDate(5),
   subtype: 'Proposed Rule',
   abstract: 'Updates to ESTA collection including social media.',
   objectType: 'document',
 };
 
-const MOCK_DOCKET_7: DocketSummary = {
+const MOCK_DOCKET_15: DocketSummary = {
   id: 'EPA-HQ-OAR-2023',
   title: 'Greenhouse Gas Emissions Standards for Heavy-Duty Vehicles',
   agencyId: 'EPA',
   docketId: 'EPA-HQ-OAR-2023',
   postedDate: '2023-03-15',
-  commentEndDate: '2025-12-20',
+  commentEndDate: getMockDate(12),
   subtype: 'Proposed Rule',
   abstract: 'New standards for heavy duty trucks.',
   objectType: 'document',
