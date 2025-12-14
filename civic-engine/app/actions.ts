@@ -271,12 +271,14 @@ export async function analyzeDocketContent(docketId: string): Promise<DocketAnal
  * Separated from analyzeDocketContent to work with promise coalescing.
  */
 async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> {
-  // 1. Fetch live metadata for "openForComment" status (always fresh)
+  // 1. Fetch live metadata for "openForComment" status and deadline (always fresh)
   let isOpenForComment: boolean | undefined = undefined;
+  let commentEndDate: string | undefined = undefined;
   try {
     const docMeta = await regulationsApi.getDocumentDetails(docketId);
     if (docMeta) {
       isOpenForComment = docMeta.openForComment;
+      commentEndDate = docMeta.commentEndDate;
     }
   } catch (err) {
     console.warn(`[actions] performDocketAnalysis: failed to fetch live metadata`, err);
@@ -288,7 +290,7 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
 
   if (redisCached) {
     console.log(`[actions] performDocketAnalysis: Redis HIT for ${docketId}`);
-    return applyOpenForCommentStatus(redisCached, isOpenForComment);
+    return applyOpenForCommentStatus(redisCached, isOpenForComment, undefined, commentEndDate);
   }
 
   // 3. Tier 2: Check SQLite cache (persistent)
@@ -298,7 +300,7 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
     console.log(`[actions] performDocketAnalysis: SQLite HIT for ${docketId}, backfilling Redis`);
     // Backfill Redis for faster subsequent access
     await setCached(cacheKey, sqliteCached, CACHE_TTL.ANALYSIS);
-    return applyOpenForCommentStatus(sqliteCached, isOpenForComment);
+    return applyOpenForCommentStatus(sqliteCached, isOpenForComment, undefined, commentEndDate);
   }
 
   // 4. Tier 3: Perform AI analysis (expensive)
@@ -312,9 +314,9 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
   console.log(`[actions] performDocketAnalysis: calling AI analyzer`);
   const analysis = await analyzeDocket(docketText);
 
-  // Apply status, objectType, and timestamp
+  // Apply status, objectType, commentEndDate, and timestamp
   const result = {
-    ...applyOpenForCommentStatus(analysis, isOpenForComment, objectType),
+    ...applyOpenForCommentStatus(analysis, isOpenForComment, objectType, commentEndDate),
     analyzedAt: new Date().toISOString(),
   };
 
@@ -327,19 +329,25 @@ async function performDocketAnalysis(docketId: string): Promise<DocketAnalysis> 
 }
 
 /**
- * Helper to merge openForComment status and objectType from API with cached/AI analysis.
+ * Helper to merge openForComment status, commentEndDate, and objectType from API with cached/AI analysis.
  * Open if EITHER API confirmed true OR AI inferred true.
  */
 function applyOpenForCommentStatus(
   analysis: DocketAnalysis,
   apiStatus: boolean | undefined,
-  objectType?: 'document' | 'docket'
+  objectType?: 'document' | 'docket',
+  apiCommentEndDate?: string
 ): DocketAnalysis {
   const apiSaysOpen = apiStatus === true;
   const aiSaysOpen = analysis.openForComment === true;
+
+  // Use API commentEndDate if available, otherwise try to use AI-extracted deadline
+  const commentEndDate = apiCommentEndDate || analysis.commentEndDate || analysis.commentingInstructions?.deadlineDate;
+
   return {
     ...analysis,
     openForComment: apiSaysOpen || aiSaysOpen,
+    commentEndDate,
     // Preserve existing objectType if already set (from cache), otherwise use provided value
     objectType: analysis.objectType || objectType || 'document',
   };

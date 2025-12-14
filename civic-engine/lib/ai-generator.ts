@@ -72,13 +72,15 @@ const docketAnalysisSchema: ResponseSchema = {
       properties: {
         format: { type: SchemaType.STRING },
         requiredPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-        deadline: { type: SchemaType.STRING },
+        deadline: { type: SchemaType.STRING, description: "Human-readable deadline description (e.g., '60 days from publication' or 'February 9, 2026')" },
+        deadlineDate: { type: SchemaType.STRING, description: "ISO 8601 date of the comment deadline in YYYY-MM-DD format (e.g., '2025-02-09'). Calculate from relative deadlines using CURRENT DATE. Set to empty string if no deadline can be determined." },
+        responsePeriodDays: { type: SchemaType.NUMBER, description: "Number of days in the comment period (e.g., 30, 60, 90). Extract from text like '60-day notice'. Set to 0 if unknown." },
         submissionMethod: { type: SchemaType.STRING },
         submissionEmail: { type: SchemaType.STRING, description: "Email address for submitting comments if mentioned in the docket, or 'NONE' if email submission is not available" },
         onlineSubmission: { type: SchemaType.BOOLEAN, description: "True if the agency accepts online submission via regulations.gov or similar portal" },
         submissionMethodsDescription: { type: SchemaType.STRING, description: "Plain-language description of ALL submission methods the agency accepts (e.g., 'Submit online at regulations.gov, by email to comments@agency.gov, or by mail to...')" }
       },
-      required: ["submissionEmail", "onlineSubmission", "submissionMethodsDescription"]
+      required: ["submissionEmail", "onlineSubmission", "submissionMethodsDescription", "deadlineDate", "responsePeriodDays"]
     },
     positions: {
       type: SchemaType.OBJECT,
@@ -214,7 +216,9 @@ export interface PositionAnalysis {
 export interface CommentingInstructions {
   format?: string;
   requiredPoints?: string[];
-  deadline?: string;
+  deadline?: string; // Human-readable deadline description
+  deadlineDate?: string; // ISO 8601 date (YYYY-MM-DD) of comment deadline
+  responsePeriodDays?: number; // Number of days in the comment period (e.g., 60)
   submissionMethod?: string;
   submissionEmail?: string; // Email address for comment submission, or "NONE" if not available
   onlineSubmission?: boolean; // True if agency accepts online submission via regulations.gov
@@ -230,6 +234,7 @@ export interface DocketAnalysis {
     mixed: PositionAnalysis;
   };
   openForComment?: boolean; // Live status from Regulations.gov
+  commentEndDate?: string; // ISO timestamp of comment deadline from API (e.g., "2025-12-16T04:59:59Z")
   objectType?: 'document' | 'docket'; // Type for correct Regulations.gov URL
   analyzedAt?: string; // ISO timestamp of when the analysis was performed/cached
 }

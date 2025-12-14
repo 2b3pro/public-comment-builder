@@ -50,8 +50,25 @@ C) **submissionMethodsDescription**: Write a clear, user-friendly sentence descr
    - This text will be displayed directly to users to guide their submission
    - Example: "Comments may be submitted online at regulations.gov, by email to comments@agency.gov, or by mail to 1300 Pennsylvania Avenue NW, Washington, DC 20229."
 
+**DEADLINE EXTRACTION (CRITICAL):**
+Extract deadline information into these fields:
+
+D) **deadline**: Human-readable description of the deadline.
+   - Example: "60 days from publication" or "February 9, 2026" or "Comments must be received by December 16, 2025"
+
+E) **deadlineDate**: ISO 8601 date of the comment deadline in YYYY-MM-DD format.
+   - Calculate the exact date from relative deadlines (e.g., "60 days from publication")
+   - Use CURRENT DATE to calculate if the deadline is relative
+   - Example: "2025-02-09"
+   - Set to empty string "" if no deadline can be determined
+
+F) **responsePeriodDays**: Number of days in the comment period.
+   - Extract from phrases like "60-day notice", "30-day comment period", etc.
+   - Example: 60, 30, 90
+   - Set to 0 if unknown
+
 ────────────────────────────────
-III. ISSUE MAP (WHAT’S REALLY AT STAKE)
+III. ISSUE MAP (WHAT'S REALLY AT STAKE)
 ────────────────────────────────
 Identify:
 • The problem the agency claims to address

@@ -75,7 +75,9 @@ The app uses a streamlined two-call AI pattern:
 
 1. **First Call (Analyze Docket)** - When you open a docket, the AI analyzes the full regulatory text and generates:
    - Plain-language summary
-   - Commenting instructions (deadlines, format)
+   - Commenting instructions (deadlines, format, submission methods)
+   - Submission email extraction (if agency accepts email comments)
+   - Deadline date extraction for comment period validation
    - Reason cards for all three positions (support, oppose, mixed)
 
 2. **Second Call (Generate Comment)** - After you select arguments, the AI drafts a formal comment incorporating:
@@ -118,6 +120,32 @@ civic-engine/
 │   └── redis.ts           # Caching utilities
 └── prompts/               # AI Prompt templates
 ```
+
+### Data Sources
+
+The app uses multiple data sources with automatic fallback:
+
+1. **Regulations.gov API** - Primary source for document metadata, deadlines, and content
+2. **Federal Register API** - Fallback when Regulations.gov content is sparse (< 500 chars)
+   - Automatically fetches full document text using FR document number
+   - Decodes Cloudflare-obfuscated email addresses in Federal Register HTML
+
+### Comment Period Validation
+
+The app automatically checks if comments are still being accepted:
+
+- Fetches `commentEndDate` from Regulations.gov API
+- AI extracts deadline from document text as backup
+- Displays warning banner if comment period has closed
+- Blocks comment drafting for expired dockets
+- Provides link to find open dockets
+
+### Force Reanalyze
+
+Users can trigger a fresh AI analysis if cached data seems stale:
+- Clears both Redis and SQLite caches
+- Re-fetches document content (including Federal Register fallback)
+- Generates new AI analysis with current date
 
 ## Caching Strategy
 

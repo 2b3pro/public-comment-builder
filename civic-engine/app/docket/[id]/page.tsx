@@ -37,6 +37,42 @@ function extractAgencyFromDocketId(docketId: string): string {
   return firstSegment || 'Agency';
 }
 
+/**
+ * Check if the comment period is closed based on deadline and openForComment status.
+ * Returns true if comments are no longer being accepted.
+ */
+function isCommentPeriodClosed(analysis: DocketAnalysis | null): boolean {
+  if (!analysis) return false;
+
+  // First check API status - if explicitly false, period is closed
+  if (analysis.openForComment === false) return true;
+
+  // Then check deadline date
+  const deadline = analysis.commentEndDate || analysis.commentingInstructions?.deadlineDate;
+  if (deadline) {
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    // Compare dates (ignore time for deadline at end of day)
+    deadlineDate.setHours(23, 59, 59, 999);
+    return now > deadlineDate;
+  }
+
+  return false;
+}
+
+/**
+ * Format deadline date for display.
+ */
+function formatDeadlineDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
 export default function DocketPage() {
   const params = useParams();
   const docketId = typeof params.id === 'string' ? decodeURIComponent(params.id) : 'USCBP-2025-0001';
@@ -425,6 +461,38 @@ export default function DocketPage() {
             </div>
           )}
 
+          {/* Comment Period Closed Warning */}
+          {isCommentPeriodClosed(analysis) && (
+            <div className="mx-4 mt-4 p-4 bg-amber-50 border border-amber-300 rounded-xl">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-amber-600 text-xl">warning</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-amber-800 mb-1">Comment Period Closed</h3>
+                  <p className="text-sm text-amber-700 mb-3">
+                    {analysis?.commentEndDate || analysis?.commentingInstructions?.deadlineDate ? (
+                      <>
+                        The comment period for this docket ended on{' '}
+                        <span className="font-semibold">
+                          {formatDeadlineDate(analysis.commentEndDate || analysis.commentingInstructions?.deadlineDate || '')}
+                        </span>.
+                        Comments are no longer being accepted.
+                      </>
+                    ) : (
+                      'The comment period for this docket has ended. Comments are no longer being accepted.'
+                    )}
+                  </p>
+                  <a
+                    href="/"
+                    className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">search</span>
+                    Find Open Dockets
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Guidelines (always visible) */}
           <div className="px-4 pt-4 animate-slide-up">
             <SubmissionGuidelines
@@ -441,7 +509,7 @@ export default function DocketPage() {
           {/* ============================================================ */}
           {/* STEP 1: Summary & Stance Selection */}
           {/* ============================================================ */}
-          {step === 'stance' && (
+          {step === 'stance' && !isCommentPeriodClosed(analysis) && (
             <div className="px-4 pt-6 animate-slide-up">
 
               {/* AI-Generated Summary */}
@@ -608,7 +676,7 @@ export default function DocketPage() {
           {/* ============================================================ */}
           {/* STEP 2: Argument Selection (Reason Cards) */}
           {/* ============================================================ */}
-          {step === 'reasoning' && (
+          {step === 'reasoning' && !isCommentPeriodClosed(analysis) && (
             <div className="px-4 pt-6 animate-slide-up">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -718,7 +786,7 @@ export default function DocketPage() {
       </main>
 
       {/* Footer (reasoning step only) */}
-      {step === 'reasoning' && (
+      {step === 'reasoning' && !isCommentPeriodClosed(analysis) && (
         <Footer
           onNext={handleGenerateDraft}
           nextLabel={`Draft Comment (${selectedArgumentIds.length})`}
