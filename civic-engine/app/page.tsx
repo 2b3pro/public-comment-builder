@@ -167,8 +167,8 @@ export default function Dashboard() {
           <Image
             src="/pcb-logo.png"
             alt="Public Comment Builder"
-            width={120}
-            height={120}
+            width={240}
+            height={240}
             className="mx-auto mb-2"
             priority
           />
@@ -176,7 +176,7 @@ export default function Dashboard() {
             Make Your Voice Count
           </h1>
           <p className="text-gray-500">
-            Find federal regulations and draft legally effective public comments in minutes.
+            Find federal regulations and draft legally effective public comments in minutes. Easy as…
           </p>
 
           {/* Easy as 1-2-3 Steps */}

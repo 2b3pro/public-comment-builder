@@ -13,8 +13,8 @@ export function SiteFooter() {
             <span className="text-sm font-medium text-gray-700">Public Comment Builder</span>
           </div>
           <p className="text-xs text-gray-500 max-w-md">
-            This tool helps citizens draft substantive public comments on federal regulations.
-            Comments are submitted directly to agencies via email or as instructed on Regulations.gov.
+            Helping citizens participate in federal rulemaking. You submit your comment directly
+            through official channels. An independent civic project—not government affiliated.
           </p>
         </div>
 
