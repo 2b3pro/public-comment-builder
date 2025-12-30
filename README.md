@@ -9,10 +9,11 @@ A web application that helps citizens draft legally substantive public comments 
 ## How It Works
 
 1. **Browse Regulations** - View federal regulations with upcoming comment deadlines from Regulations.gov
-2. **Select Your Position** - Choose whether you support, oppose, or have mixed feelings about the proposal
-3. **Build Your Argument** - Select from AI-generated reason cards aligned with federal evaluation criteria (cost-benefit analysis, distributional impacts, implementation concerns, etc.)
-4. **Add Your Perspective** - Include your lived experience and personal context to strengthen your comment
-5. **Generate & Submit** - Get a professionally formatted comment ready for submission to the agency
+2. **Read the Citizen's Brief** - Get an AI-generated plain-language explainer with impact analysis and key context
+3. **Select Your Position** - Choose whether you support, oppose, or have mixed feelings about the proposal
+4. **Build Your Argument** - Select from AI-generated reason cards aligned with federal evaluation criteria (cost-benefit analysis, distributional impacts, implementation concerns, etc.)
+5. **Add Your Perspective** - Include your lived experience and personal context to strengthen your comment
+6. **Generate & Submit** - Get a professionally formatted comment ready for submission to the agency
 
 ## Why This Matters
 
@@ -89,7 +90,15 @@ The app uses a streamlined two-call AI pattern:
      - **RFIs/ANPRMs**: Question-based response cards
      - **General Notices**: Issue-based response cards
 
-2. **Second Call (Generate Comment)** - After you select arguments, the AI drafts a formal comment incorporating:
+2. **Citizen's Brief (On-Demand)** - Users can expand a collapsible panel to generate a detailed briefing:
+   - Plain-English summary of the proposal
+   - Context & stakes (why now, what triggered this)
+   - Multi-perspective impact table (Public Health, Environment, Industry, Communities)
+   - Response guidance with suggested angles
+   - One-sentence verdict capturing both sides
+   - Optional glossary for technical documents
+
+3. **Third Call (Generate Comment)** - After you select arguments, the AI drafts a formal comment incorporating:
    - Your selected reason cards
    - Personal context and expertise
    - Custom text you've added

@@ -18,7 +18,31 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
-    date: '2024-12-30',
+    date: '2025-12-30',
+    version: '1.4.0',
+    title: "Citizen's Brief",
+    changes: [
+      {
+        type: 'added',
+        description: "Citizen's Brief: On-demand plain-language explainer for regulatory notices",
+      },
+      {
+        type: 'added',
+        description: 'AI-generated briefing includes: plain-English summary, context & stakes, multi-perspective impact table, response guidance, and one-sentence verdict',
+      },
+      {
+        type: 'added',
+        description: 'Optional glossary for technical documents with jargon definitions',
+      },
+      {
+        type: 'added',
+        description: '7-day Redis caching and request deduplication to optimize AI costs',
+      },
+    ],
+  },
+  {
+    date: '2025-12-30',
+    version: '1.3.0',
     title: 'Search Improvements & UI Enhancements',
     changes: [
       {
@@ -36,7 +60,8 @@ const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    date: '2024-12-29',
+    date: '2025-12-29',
+    version: '1.2.0',
     title: 'Branding & Social Sharing',
     changes: [
       {
@@ -54,7 +79,8 @@ const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    date: '2024-12-28',
+    date: '2025-12-01',
+    version: '1.0.0',
     title: 'Initial Public Release',
     changes: [
       {
@@ -122,7 +148,14 @@ export default function ChangelogPage() {
               <div className="flex items-center gap-3 mb-4">
                 <span className="material-symbols-outlined text-primary">update</span>
                 <div>
-                  <h2 className="font-bold text-gray-900">{entry.title}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-gray-900">{entry.title}</h2>
+                    {entry.version && (
+                      <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                        v{entry.version}
+                      </span>
+                    )}
+                  </div>
                   <time className="text-xs text-gray-500">{formatDate(entry.date)}</time>
                 </div>
               </div>

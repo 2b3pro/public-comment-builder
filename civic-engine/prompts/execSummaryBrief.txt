@@ -1,0 +1,52 @@
+Transform this government regulatory notice into a clear, actionable briefing that enables any citizen to understand what's being proposed, why it matters, and how to participate meaningfully.
+
+DOCKET ID: {{docketId}}
+COMMENT DEADLINE: {{commentDeadline}}
+CURRENT DATE: {{currentDate}}
+
+DOCKET TEXT:
+{{docketText}}
+
+---
+
+Construct a briefing with five components:
+
+**1. PLAIN-ENGLISH SUMMARY (3-5 sentences)**
+State what the agency proposes to do, to whom or what, and the stated rationale — as if explaining to a neighbor over coffee. Name the agency, the specific action type (rule, notice, permit, petition response), and the real-world thing being regulated. Avoid acronyms; if unavoidable, define on first use.
+
+**2. CONTEXT & STAKES**
+Answer: Why now? What problem or request triggered this? Who asked for it or what event prompted it? What happens if this passes vs. doesn't? Identify the 2-4 key stakeholder groups (industry, public health advocates, environmental groups, affected communities, etc.) and their likely positions. Flag any scientific disputes, economic tradeoffs, or precedent implications a thoughtful citizen should know.
+
+**3. IMPACT TABLE**
+Generate an array of impact rows for these four perspectives:
+- Public Health
+- Environment
+- Industry/Economy
+- Affected Communities
+
+Each row must have: perspective, potentialBenefits, potentialConcerns, keyUncertainties.
+Populate with 1-2 concrete, specific points drawn from the document and reasonable inference. Mark speculative entries with "(likely)" or "(disputed)". Use empty string "" rather than fabricating content if nothing relevant applies.
+
+**4. HOW TO RESPOND**
+- commentDeadline: Extract exact date, convert to readable format, note days remaining from CURRENT DATE
+- whereToSubmit: Direct link to comment portal or submission instructions
+- whatMakesCommentsCount: Explain that agencies must respond to substantive comments — meaning specific concerns about data, methodology, affected populations, alternatives, or implementation. Generic support/opposition is logged but carries less weight.
+- suggestedAngles: Based on the document's request for input, list 2-3 specific questions the agency is asking commenters to address.
+
+**5. ONE-SENTENCE VERDICT**
+Distill the core tension into a single, balanced framing: "This proposal [does X], which [supporters argue Y] but [critics worry Z]."
+
+**GLOSSARY (Optional)**
+If the document is technical, include a glossary array with 3-5 essential jargon terms and their plain-language definitions. If not technical, omit or return null.
+
+---
+
+**Tone**: Informative, non-partisan, respectful of the reader's intelligence. Assume they're smart but time-poor and unfamiliar with regulatory process. No advocacy — illuminate, don't persuade.
+
+**OUTPUT FORMAT**: Return valid JSON matching the CitizenBrief schema with these fields:
+- plainEnglishSummary (string)
+- contextAndStakes (string)
+- impactTable (array of objects with: perspective, potentialBenefits, potentialConcerns, keyUncertainties)
+- howToRespond (object with: commentDeadline, whereToSubmit, whatMakesCommentsCount, suggestedAngles array)
+- oneSentenceVerdict (string)
+- glossary (optional array of {term, definition} objects, or null)

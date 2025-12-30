@@ -5,6 +5,16 @@ All notable changes to Public Comment Builder will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-12-30
+
+### Added
+- **Citizen's Brief**: On-demand plain-language explainer for regulatory notices
+  - Collapsible panel on docket page between summary and stance selection
+  - AI-generated briefing with: plain-English summary, context & stakes, multi-perspective impact table, response guidance, and one-sentence verdict
+  - Optional glossary for technical documents
+  - 7-day Redis caching to avoid duplicate AI calls
+  - Request deduplication prevents multiple in-flight generations
+
 ## [1.3.0] - 2025-12-30
 
 ### Added

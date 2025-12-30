@@ -73,15 +73,23 @@ export function getAnalysisCacheKey(docketId: string): string {
   return `analysis:${docketId}`;
 }
 
+/**
+ * Generate cache key for Citizen's Brief.
+ */
+export function getCitizenBriefCacheKey(docketId: string): string {
+  return `brief:${docketId}`;
+}
+
 // ============================================================
 // CACHE TTL (Time To Live) in seconds
 // ============================================================
 
 export const CACHE_TTL = {
-  DASHBOARD: 24 * 60 * 60,     // 24 hours for dashboard
-  DOCKET: 7 * 24 * 60 * 60,    // 7 days for docket content (rarely changes)
-  SEARCH: 24 * 60 * 60,        // 24 hours for search results
-  ANALYSIS: 7 * 24 * 60 * 60,  // 7 days for AI analysis results
+  DASHBOARD: 24 * 60 * 60,        // 24 hours for dashboard
+  DOCKET: 7 * 24 * 60 * 60,       // 7 days for docket content (rarely changes)
+  SEARCH: 24 * 60 * 60,           // 24 hours for search results
+  ANALYSIS: 7 * 24 * 60 * 60,     // 7 days for AI analysis results
+  CITIZEN_BRIEF: 7 * 24 * 60 * 60, // 7 days for Citizen's Brief
 };
 
 // ============================================================

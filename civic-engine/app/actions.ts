@@ -5,12 +5,14 @@ import {
   analyzeDocket,
   regenerateReasonCard,
   generateFinalComment,
+  generateCitizenBrief,
   DocketAnalysis,
   Position,
   NoticeType,
   ReasonCard,
   ArgumentOption,
   CommentingInstructions,
+  CitizenBrief,
   // Legacy exports
   generateArgumentsWithAI,
   ArgumentCategory
@@ -23,6 +25,7 @@ import {
   getDocketCacheKey,
   getSearchCacheKey,
   getAnalysisCacheKey,
+  getCitizenBriefCacheKey,
   CACHE_TTL
 } from '@/lib/redis';
 import { revalidatePath } from 'next/cache';
@@ -377,6 +380,61 @@ export async function forceReanalyzeDocket(docketId: string): Promise<DocketAnal
 
   // Perform fresh analysis (will skip cache checks since we just cleared them)
   return performDocketAnalysis(docketId);
+}
+
+// ============================================================
+// CITIZEN'S BRIEF GENERATION (on-demand)
+// ============================================================
+
+/**
+ * Generate a Citizen's Brief for a docket.
+ * Uses promise coalescing to prevent duplicate AI calls and
+ * Redis caching to avoid regenerating for the same docket.
+ */
+export async function generateCitizenBriefAction(docketId: string): Promise<CitizenBrief> {
+  console.log(`[actions] generateCitizenBriefAction: docketId=${docketId}`);
+
+  // Use promise coalescing to prevent duplicate in-flight requests
+  return deduplicatedRequest(`brief:${docketId}`, async () => {
+    return performCitizenBriefGeneration(docketId);
+  });
+}
+
+/**
+ * Internal function that performs the actual brief generation.
+ */
+async function performCitizenBriefGeneration(docketId: string): Promise<CitizenBrief> {
+  // 1. Check Redis cache first
+  const cacheKey = getCitizenBriefCacheKey(docketId);
+  const cached = await getCached<CitizenBrief>(cacheKey);
+
+  if (cached) {
+    console.log(`[actions] performCitizenBriefGeneration: Redis HIT for ${docketId}`);
+    return cached;
+  }
+
+  // 2. Generate new brief
+  console.log(`[actions] performCitizenBriefGeneration: MISS, generating for ${docketId}`);
+
+  // Get docket text (uses existing three-tier cache)
+  const { text: docketText } = await getDocketText(docketId);
+
+  // Get deadline from existing analysis if available (avoid duplicate AI call)
+  let commentDeadline: string | undefined;
+  const analysisCacheKey = getAnalysisCacheKey(docketId);
+  const cachedAnalysis = await getCached<DocketAnalysis>(analysisCacheKey);
+  if (cachedAnalysis?.commentingInstructions?.deadline) {
+    commentDeadline = cachedAnalysis.commentingInstructions.deadline;
+  }
+
+  // Generate the brief
+  const brief = await generateCitizenBrief(docketText, docketId, commentDeadline);
+
+  // 3. Cache the result
+  await setCached(cacheKey, brief, CACHE_TTL.CITIZEN_BRIEF);
+
+  console.log(`[actions] performCitizenBriefGeneration: brief generated and cached for ${docketId}`);
+  return brief;
 }
 
 /**

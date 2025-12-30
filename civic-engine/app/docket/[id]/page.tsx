@@ -10,6 +10,7 @@ import { ImpactToggle } from '@/components/ImpactToggle';
 import { SubmissionGuidelines } from '@/components/SubmissionGuidelines';
 import { CommentPreview } from '@/components/CommentPreview';
 import { ShareDocket } from '@/components/ShareDocket';
+import { CitizenBrief } from '@/components/CitizenBrief';
 import {
   analyzeDocketContent,
   regenerateReasonCardAction,
@@ -685,6 +686,11 @@ export default function DocketPage() {
                     <div className="h-4 bg-gray-200 rounded w-5/6"></div>
                   </div>
                 )}
+              </div>
+
+              {/* Citizen's Brief - On-demand plain-language explainer */}
+              <div className="mb-6">
+                <CitizenBrief docketId={docketId} />
               </div>
 
               {/* For proposed_rule: Show stance selection */}

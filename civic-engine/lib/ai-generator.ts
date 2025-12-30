@@ -245,6 +245,57 @@ const docketAnalysisSchema: ResponseSchema = {
   required: ["noticeType", "summary", "commentingInstructions"]
 };
 
+// Schema for Citizen's Brief structured output
+const citizenBriefSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    plainEnglishSummary: { type: SchemaType.STRING, description: "3-5 sentence plain-language summary of the proposal" },
+    contextAndStakes: { type: SchemaType.STRING, description: "Why now, what triggered this, consequences if passed/not passed" },
+    impactTable: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          perspective: { type: SchemaType.STRING, description: "Stakeholder perspective (e.g., Public Health, Environment)" },
+          potentialBenefits: { type: SchemaType.STRING, description: "Potential benefits from this perspective" },
+          potentialConcerns: { type: SchemaType.STRING, description: "Potential concerns from this perspective" },
+          keyUncertainties: { type: SchemaType.STRING, description: "Key uncertainties from this perspective" }
+        },
+        required: ["perspective", "potentialBenefits", "potentialConcerns", "keyUncertainties"]
+      }
+    },
+    howToRespond: {
+      type: SchemaType.OBJECT,
+      properties: {
+        commentDeadline: { type: SchemaType.STRING, description: "Human-readable deadline" },
+        whereToSubmit: { type: SchemaType.STRING, description: "Where and how to submit comments" },
+        whatMakesCommentsCount: { type: SchemaType.STRING, description: "Guidance on what makes comments substantive" },
+        suggestedAngles: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+          description: "2-3 specific questions or angles the agency is asking commenters to address"
+        }
+      },
+      required: ["commentDeadline", "whereToSubmit", "whatMakesCommentsCount", "suggestedAngles"]
+    },
+    oneSentenceVerdict: { type: SchemaType.STRING, description: "Core tension in one sentence: This proposal [does X], which [supporters argue Y] but [critics worry Z]" },
+    glossary: {
+      type: SchemaType.ARRAY,
+      nullable: true,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          term: { type: SchemaType.STRING },
+          definition: { type: SchemaType.STRING }
+        },
+        required: ["term", "definition"]
+      },
+      description: "Optional mini-glossary of 3-5 technical terms"
+    }
+  },
+  required: ["plainEnglishSummary", "contextAndStakes", "impactTable", "howToRespond", "oneSentenceVerdict"]
+};
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -336,6 +387,32 @@ export interface ArgumentCategory {
   title: string;
   icon: string;
   options: ArgumentOption[];
+}
+
+// ============================================================
+// CITIZEN'S BRIEF TYPES
+// ============================================================
+
+export interface ImpactRow {
+  perspective: string; // e.g., "Public Health", "Environment", "Industry/Economy", "Affected Communities"
+  potentialBenefits: string;
+  potentialConcerns: string;
+  keyUncertainties: string;
+}
+
+export interface CitizenBrief {
+  plainEnglishSummary: string;          // 3-5 sentences explaining the proposal
+  contextAndStakes: string;              // Why now, what triggered this, consequences
+  impactTable: ImpactRow[];              // Multi-perspective impact analysis
+  howToRespond: {
+    commentDeadline: string;             // Human-readable deadline
+    whereToSubmit: string;               // Submission instructions
+    whatMakesCommentsCount: string;      // Guidance on substantive comments
+    suggestedAngles: string[];           // 2-3 specific questions/angles
+  };
+  oneSentenceVerdict: string;            // "This proposal [does X], which [supporters argue Y] but [critics worry Z]"
+  glossary?: { term: string; definition: string }[];  // Optional mini-glossary for technical notices
+  generatedAt: string;                   // ISO timestamp
 }
 
 // ============================================================
@@ -867,4 +944,105 @@ export async function generateArgumentsWithAI(
     icon: card.icon,
     options: card.arguments
   }));
+}
+
+// ============================================================
+// CITIZEN'S BRIEF GENERATION
+// ============================================================
+
+const MOCK_CITIZEN_BRIEF: CitizenBrief = {
+  plainEnglishSummary: "CBP proposes to require all ESTA applicants to use a mobile app instead of the website, submit selfie photos with liveness detection, and provide extensive personal information including 5 years of social media accounts and 10 years of email addresses. The agency also wants to collect information about applicants' family members.",
+  contextAndStakes: "This proposal follows documented cases of fraudulent ESTA applications using fake passport photos. If approved, millions of visa-waiver travelers would need NFC-capable smartphones to apply. Critics argue the data collection far exceeds security needs, while supporters say biometric verification is essential to prevent identity fraud.",
+  impactTable: [
+    {
+      perspective: "Public Health",
+      potentialBenefits: "",
+      potentialConcerns: "Biometric data collection raises privacy concerns",
+      keyUncertainties: "Long-term data retention policies unclear"
+    },
+    {
+      perspective: "Environment",
+      potentialBenefits: "",
+      potentialConcerns: "",
+      keyUncertainties: ""
+    },
+    {
+      perspective: "Industry/Economy",
+      potentialBenefits: "Reduced identity fraud in travel sector",
+      potentialConcerns: "Mobile-only requirement may deter some travelers; third-party assistance costs",
+      keyUncertainties: "Impact on travel volume from visa-waiver countries"
+    },
+    {
+      perspective: "Affected Communities",
+      potentialBenefits: "Enhanced security screening",
+      potentialConcerns: "Elderly and disabled travelers may struggle with mobile-only requirement; extensive family data collection affects relatives",
+      keyUncertainties: "Accessibility accommodations not specified"
+    }
+  ],
+  howToRespond: {
+    commentDeadline: "60 days from publication",
+    whereToSubmit: "Submit online at regulations.gov",
+    whatMakesCommentsCount: "Agencies must respond to substantive comments addressing specific data, methodology, affected populations, or alternatives. Generic support/opposition is logged but carries less weight.",
+    suggestedAngles: [
+      "Is the proposed data collection necessary for the agency's security functions?",
+      "Are the burden estimates accurate for the new requirements?",
+      "How can the agency minimize burden while achieving security goals?"
+    ]
+  },
+  oneSentenceVerdict: "This proposal modernizes ESTA with biometric verification, which supporters argue prevents identity fraud but critics worry creates excessive data collection and excludes travelers without smartphones.",
+  generatedAt: new Date().toISOString()
+};
+
+/**
+ * Generate a Citizen's Brief - a plain-language executive summary
+ * designed to help citizens quickly understand a regulatory notice.
+ */
+export async function generateCitizenBrief(
+  docketText: string,
+  docketId: string,
+  commentDeadline?: string
+): Promise<CitizenBrief> {
+  console.log(`[ai-generator] generateCitizenBrief: docketId=${docketId}`);
+
+  if (!API_KEY) {
+    console.log("[ai-generator] GEMINI_API_KEY not found, using mock data");
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return { ...MOCK_CITIZEN_BRIEF, generatedAt: new Date().toISOString() };
+  }
+
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-flash-latest",
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: citizenBriefSchema
+    }
+  });
+
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const prompt = await loadPrompt("execSummaryBrief", {
+    docketText: docketText.slice(0, 15000), // Limit context window
+    docketId,
+    commentDeadline: commentDeadline || 'See docket for deadline',
+    currentDate
+  });
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    await logAICall("generateCitizenBrief", prompt, text);
+
+    const parsed = JSON.parse(text) as Omit<CitizenBrief, 'generatedAt'>;
+    return {
+      ...parsed,
+      generatedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("[ai-generator] Error generating citizen brief:", error);
+    return { ...MOCK_CITIZEN_BRIEF, generatedAt: new Date().toISOString() };
+  }
 }
