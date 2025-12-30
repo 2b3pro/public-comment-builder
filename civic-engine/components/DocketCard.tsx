@@ -26,7 +26,7 @@ function formatDeadline(dateStr?: string): string {
 
 export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) => {
   return (
-    <article className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+    <article className="group/card bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all relative">
       <div className="flex justify-between items-start mb-2">
         <span className="text-xs font-bold text-primary bg-blue-50 px-2 py-1 rounded">
           {docket.id}
@@ -37,7 +37,7 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
         </span>
       </div>
 
-      <h3 className="text-gray-900 font-bold text-sm leading-snug mb-1 line-clamp-2">
+      <h3 className="text-gray-900 font-bold text-sm leading-snug mb-1 line-clamp-2 group-hover/card:text-primary transition-colors">
         {docket.title}
       </h3>
 
@@ -45,9 +45,18 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
         {docket.agencyId} • {docket.subtype}
       </p>
 
-      {/* Abstract/Description */}
+      {/* Abstract/Description - Hidden by default, revealed on hover (desktop only) */}
       {docket.abstract && (
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+        <div className="hidden lg:block overflow-hidden">
+          <p className="text-xs text-gray-600 leading-relaxed mb-3 max-h-0 opacity-0 group-hover/card:max-h-24 group-hover/card:opacity-100 transition-all duration-300 ease-out line-clamp-4">
+            {docket.abstract}
+          </p>
+        </div>
+      )}
+
+      {/* Abstract - Always visible on mobile/tablet */}
+      {docket.abstract && (
+        <p className="lg:hidden text-xs text-gray-600 mb-3 line-clamp-4 leading-relaxed">
           {docket.abstract}
         </p>
       )}
@@ -55,7 +64,7 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
       {/* Comment count badge */}
       {commentCount !== undefined && commentCount > 0 && (
         <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-          <span className="material-symbols-outlined text--[14px]">groups</span>
+          <span className="material-symbols-outlined text-[14px]">groups</span>
           <span>{commentCount} comment{commentCount !== 1 ? 's' : ''} drafted</span>
         </div>
       )}
