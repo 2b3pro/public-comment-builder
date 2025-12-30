@@ -572,7 +572,7 @@ export default function DocketPage() {
       />
 
       <main className="flex-1 overflow-y-auto no-scrollbar pb-32">
-        <div className="relative flex flex-col w-full max-w-md mx-auto group/design-root">
+        <div className="relative flex flex-col w-full max-w-md lg:max-w-3xl xl:max-w-4xl mx-auto group/design-root">
 
           {/* Error Banner */}
           {error && (
@@ -614,7 +614,7 @@ export default function DocketPage() {
           )}
 
           {/* Guidelines (always visible) */}
-          <div className="px-4 pt-4 animate-slide-up">
+          <div className="px-4 lg:px-6 pt-4 animate-slide-up">
             <SubmissionGuidelines
               docketId={docketId}
               agencyName={extractAgencyFromDocketId(docketId)}
@@ -636,7 +636,7 @@ export default function DocketPage() {
           {/* STEP 1: Citizen's Brief & Stance Selection (Brief-First Flow) */}
           {/* ============================================================ */}
           {step === 'stance' && !isCommentPeriodClosed(analysis) && (
-            <div className="px-4 pt-6 animate-slide-up">
+            <div className="px-4 lg:px-6 pt-6 animate-slide-up">
 
               {/* Citizen's Brief - Prominently displayed (Brief-First Flow) */}
               {brief && (
@@ -686,8 +686,8 @@ export default function DocketPage() {
                         <span className="material-symbols-outlined text-sm">balance</span>
                         Who's Affected
                       </h4>
-                      <div className="overflow-x-auto -mx-4 px-4">
-                        <table className="w-full text-xs border-collapse min-w-[500px]">
+                      <div className="overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0">
+                        <table className="w-full text-xs border-collapse min-w-[500px] lg:min-w-0">
                           <thead>
                             <tr className="bg-indigo-100/50">
                               <th className="text-left p-2 font-semibold text-indigo-900 rounded-tl-lg">Perspective</th>
@@ -961,7 +961,7 @@ export default function DocketPage() {
           {/* STEP 2: Argument Selection (Reason Cards) */}
           {/* ============================================================ */}
           {step === 'reasoning' && !isCommentPeriodClosed(analysis) && (
-            <div className="px-4 pt-6 animate-slide-up">
+            <div className="px-4 lg:px-6 pt-6 animate-slide-up">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-gray-900 tracking-tight text-xl font-bold leading-tight text-left">

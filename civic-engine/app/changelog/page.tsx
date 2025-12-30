@@ -19,6 +19,29 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     date: '2025-12-30',
+    version: '1.6.0',
+    title: 'Desktop-Optimized Layout',
+    changes: [
+      {
+        type: 'added',
+        description: 'Responsive grid layout for docket cards: 2 columns on tablet, 3 columns on desktop',
+      },
+      {
+        type: 'changed',
+        description: 'Dashboard and docket pages now expand to use available desktop width instead of fixed mobile-width',
+      },
+      {
+        type: 'changed',
+        description: 'Improved padding and spacing for larger viewports',
+      },
+      {
+        type: 'changed',
+        description: 'Comment preview textarea height increased on desktop for better editing experience',
+      },
+    ],
+  },
+  {
+    date: '2025-12-30',
     version: '1.5.0',
     title: 'Brief-First Flow',
     changes: [

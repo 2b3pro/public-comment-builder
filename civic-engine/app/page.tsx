@@ -163,7 +163,7 @@ export default function Dashboard() {
     <div className="flex flex-col min-h-screen bg-background-light">
       {/* Hero Search Section */}
       <section className="bg-white border-b border-gray-200 p-6 pb-10">
-        <div className="max-w-md mx-auto text-center space-y-4">
+        <div className="max-w-md lg:max-w-xl mx-auto text-center space-y-4">
           <Image
             src="/pcb-logo.png"
             alt="Public Comment Builder"
@@ -219,7 +219,7 @@ export default function Dashboard() {
       </section>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-md mx-auto w-full p-4 space-y-8 pb-32">
+      <main className="flex-1 max-w-md lg:max-w-4xl xl:max-w-5xl mx-auto w-full p-4 lg:p-6 space-y-8 pb-32">
 
         {/* Search Results */}
         {(isSearching || searchResults.length > 0) && (
@@ -231,7 +231,7 @@ export default function Dashboard() {
             {isSearching ? (
               <div className="text-center py-8 text-gray-500">Searching Regulations.gov...</div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {searchResults.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
               </div>
             )}
@@ -250,14 +250,14 @@ export default function Dashboard() {
                 </span>
               </h2>
             </summary>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {trendingDockets.map((docket, idx) => (
                 <Link
                   key={docket.docketId}
                   href={`/docket/${encodeURIComponent(docket.docketId)}`}
                   className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-primary/30 transition-all group/card"
                 >
-                  <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-600 rounded-lg font-bold text-sm">
+                  <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-600 rounded-lg font-bold text-sm shrink-0">
                     #{idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -268,7 +268,7 @@ export default function Dashboard() {
                       {docket.agencyId} • {docket.docketId}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+                  <div className="flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full shrink-0">
                     <span className="material-symbols-outlined text-[14px]">groups</span>
                     {docket.count}
                   </div>
@@ -308,9 +308,9 @@ export default function Dashboard() {
                 </span>
               </h2>
             </summary>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {due3Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
-              {due3Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing in the next 3 days.</p>}
+              {due3Days.length === 0 && <p className="text-sm text-gray-500 italic col-span-full">No dockets closing in the next 3 days.</p>}
             </div>
           </details>
         )}
@@ -327,9 +327,9 @@ export default function Dashboard() {
                 </span>
               </h2>
             </summary>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {due7Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
-              {due7Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing in the next 7 days.</p>}
+              {due7Days.length === 0 && <p className="text-sm text-gray-500 italic col-span-full">No dockets closing in the next 7 days.</p>}
             </div>
           </details>
         )}
@@ -346,9 +346,9 @@ export default function Dashboard() {
                 </span>
               </h2>
             </summary>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {due15Days.map(doc => <DocketCard key={doc.id} docket={doc} commentCount={commentCounts[doc.docketId]} />)}
-              {due15Days.length === 0 && <p className="text-sm text-gray-500 italic">No dockets closing in the next 15 days. Use search to find open comment periods.</p>}
+              {due15Days.length === 0 && <p className="text-sm text-gray-500 italic col-span-full">No dockets closing in the next 15 days. Use search to find open comment periods.</p>}
             </div>
           </details>
         )}

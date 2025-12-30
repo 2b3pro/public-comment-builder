@@ -77,7 +77,7 @@ export const CommentPreview: React.FC<CommentPreviewProps> = ({
 
   return (
     <div className="flex flex-col h-full animate-slide-up">
-      <div className="px-4 py-4">
+      <div className="px-4 lg:px-6 py-4 max-w-3xl mx-auto w-full">
         <h2 className="text-gray-900 text-2xl font-bold mb-2">Review Your Comment</h2>
         <p className="text-gray-500 text-sm mb-4">
           Review and edit your comment before submitting.
@@ -100,7 +100,7 @@ export const CommentPreview: React.FC<CommentPreviewProps> = ({
 
         <div className="relative">
           <textarea
-            className="w-full h-[50vh] p-4 text-base text-gray-800 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none font-serif leading-relaxed"
+            className="w-full h-[50vh] lg:h-[60vh] p-4 text-base text-gray-800 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none font-serif leading-relaxed"
             value={cleanComment}
             onChange={(e) => {
               // Preserve the summary when user edits the comment
@@ -116,7 +116,8 @@ export const CommentPreview: React.FC<CommentPreviewProps> = ({
         </div>
       </div>
 
-      <div className="mt-auto bg-white border-t border-gray-200 p-4 pb-8 flex flex-col gap-3 shadow-lg z-20">
+      <div className="mt-auto bg-white border-t border-gray-200 p-4 lg:p-6 pb-8 shadow-lg z-20">
+        <div className="max-w-3xl mx-auto flex flex-col gap-3">
         {/* Primary submission options based on what's available */}
         {hasEmailSubmission && (
           <a
@@ -246,6 +247,7 @@ export const CommentPreview: React.FC<CommentPreviewProps> = ({
             <ShareDocket docketId={docketId || ''} className="bg-indigo-50/50" />
           </div>
         )}
+        </div>
       </div>
     </div>
   );
