@@ -19,12 +19,19 @@ export function SiteFooter() {
         </div>
 
         {/* Row 2: Links */}
-        <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400">
           <a
             href="/faq"
             className="hover:text-primary transition-colors"
           >
             How It Works
+          </a>
+          <span className="text-gray-300">|</span>
+          <a
+            href="/changelog"
+            className="hover:text-primary transition-colors"
+          >
+            Changelog
           </a>
           <span className="text-gray-300">|</span>
           <a

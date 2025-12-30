@@ -74,13 +74,17 @@ export const regulationsApi = {
 
   /**
    * Search for documents (e.g., by Docket ID or keyword)
+   * Only returns documents with open comment periods (commentEndDate >= today)
    */
   async searchDocuments(query: string, sort: string = '-postedDate'): Promise<DocketSummary[]> {
-    console.log(`[regulations-api] searchDocuments: query="${query}" sort="${sort}"`);
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    console.log(`[regulations-api] searchDocuments: query="${query}" sort="${sort}" commentEndDate>=${todayStr}`);
     try {
       const response = await axios.get(`${BASE_URL}/documents`, {
         params: {
           'filter[searchTerm]': query,
+          'filter[commentEndDate][ge]': todayStr, // Only documents with open comment periods
           'api_key': API_KEY,
           'sort': sort,
         },

@@ -1,67 +1,61 @@
 # Changelog
 
-## 1.20 - 2025-12-12
+All notable changes to Public Comment Builder will be documented in this file.
 
-### Added - Comment Submission Flow Enhancement
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-#### Feature: Open for Comment Detection & Direct Submission Link
+## [1.3.0] - 2025-12-30
 
-**Problem Solved:**
-Users needed a way to determine if a document is accepting comments and a streamlined path to submit their drafted comments on Regulations.gov.
+### Added
+- Public changelog page at `/changelog` for transparency about site updates
+- Changelog link in site footer
+- Docket cards now display abstract/description when available from the API
 
-**Implementation:**
+### Changed
+- Search results now filter to only show dockets with open comment periods (commentEndDate >= today)
+- Footer links now wrap gracefully on mobile devices
 
-1. **API Integration (`lib/regulations-api.ts`)**
-   - Added `openForComment?: boolean` field to `DocketSummary` interface
-   - Mapped the `openForComment` attribute from Regulations.gov API responses in:
-     - `getDocumentsClosingRange()`
-     - `searchDocuments()`
-     - `getDocumentDetails()`
-     - `getDocumentFullDetails()`
+## [1.2.0] - 2025-12-29
 
-2. **AI Analysis Enhancement (`lib/ai-generator.ts`)**
-   - Updated `DocketAnalysis` interface to include `openForComment?: boolean`
-   - Modified AI prompt (`prompts/analyzeDocket.txt`) to:
-     - Receive current date as context
-     - Infer comment period status from deadline text
-     - Return `openForComment` based on deadline vs. current date comparison
-   - Updated response schema to capture AI-inferred open status
+### Added
+- PCB logo on landing page and SEO/OG images
+- Facebook and Threads share buttons on comment review page
+- Page link included in share text for easier sharing
 
-3. **Server Actions (`app/actions.ts`)**
-   - Enhanced `analyzeDocketContent()` to:
-     - Fetch live `openForComment` status from API
-     - Combine API signal with AI-inferred signal using OR logic
-     - Ensures detection even when API flag is missing but text has valid deadline
-     - Updates cached analysis with fresh status on each request
+## [1.1.1] - 2025-12-12
 
-4. **UI Enhancement (`app/docket/[id]/page.tsx`)**
-   - Added modal dialog that appears after copying comment text
-   - Modal displays when `analysis.openForComment === true`
-   - Provides direct link to `https://www.regulations.gov/commenton/{docketId}`
-   - Guides users to paste their comment on the official submission page
-   - Fallback alert for documents not open for comment
+### Added
+- Comment submission flow enhancement with direct Regulations.gov link
+- `openForComment` detection using dual-signal approach (API flag + AI deadline inference)
+- Modal dialog after copying comment that guides users to submit on Regulations.gov
+- Live status check on every docket load (not relying solely on cache)
 
-**User Flow:**
-1. User drafts comment and clicks "Copy to Clipboard"
-2. If document is open for comment → Modal appears with success message
-3. User clicks "Go to Submission Page" → Opens Regulations.gov in new tab
-4. User pastes their pre-copied comment and submits
+### Changed
+- Updated `DocketSummary` and `DocketAnalysis` interfaces to include `openForComment` field
+- AI prompt now receives current date context to infer comment period status
 
-**Technical Details:**
-- Dual-signal approach: API flag OR AI deadline inference
-- Prevents false negatives when API doesn't provide flag
-- Fresh status check on every docket load (not cached)
-- Modal uses Material Symbols icons and matches app design system
+## [1.1.0] - 2025-12-10
 
-**Files Modified:**
-- `lib/regulations-api.ts` - API response mapping
-- `lib/ai-generator.ts` - Type definitions and AI schema
-- `prompts/analyzeDocket.txt` - AI prompt enhancement
-- `app/actions.ts` - Status detection logic
-- `app/docket/[id]/page.tsx` - Copy modal UI
+### Added
+- FAQ page explaining how substantive comments work
+- "Recently Commented" section showing trending dockets by comment count
+- Background cache warming for faster docket analysis
+- Admin stats page at `/admin/stats`
 
----
+### Changed
+- Dashboard now shows dockets in 3, 7, and 15 day buckets (aligned with Regulations.gov)
 
-## Previous Changes
+## [1.0.0] - 2025-12-01
 
-(Add previous changelog entries here)
+### Added
+- Initial public release
+- Dashboard showing dockets with open comment periods
+- AI-powered comment drafting with Gemini Flash
+- Three-step wizard: stance selection, argument cards, review/export
+- Integration with Regulations.gov API for live docket data
+- Federal Register API fallback for full document text
+- Redis caching layer with graceful fallback
+- SQLite persistent cache for docket analysis
+- Copy-to-clipboard functionality
+- Anonymous statistics tracking (comment counts per docket)

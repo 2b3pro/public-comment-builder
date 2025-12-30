@@ -37,13 +37,20 @@ export const DocketCard: React.FC<DocketCardProps> = ({ docket, commentCount }) 
         </span>
       </div>
 
-      <h3 className="text-gray-900 font-bold text-sm leading-snug mb-2 line-clamp-2">
+      <h3 className="text-gray-900 font-bold text-sm leading-snug mb-1 line-clamp-2">
         {docket.title}
       </h3>
 
-      <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+      <p className="text-xs text-gray-500 mb-2">
         {docket.agencyId} • {docket.subtype}
       </p>
+
+      {/* Abstract/Description */}
+      {docket.abstract && (
+        <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+          {docket.abstract}
+        </p>
+      )}
 
       {/* Comment count badge */}
       {commentCount !== undefined && commentCount > 0 && (
