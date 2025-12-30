@@ -74,29 +74,30 @@ npm start
 
 ## Architecture
 
-### Two-Call AI Architecture
+### Brief-First AI Architecture
 
-The app uses a streamlined two-call AI pattern:
+The app uses a streamlined AI flow that prioritizes user understanding:
 
-1. **First Call (Analyze Docket)** - When you open a docket, the AI analyzes the full regulatory text and generates:
-   - Plain-language summary
-   - Commenting instructions (deadlines, format, submission methods)
-   - Submission email extraction (if agency accepts email comments)
-   - Deadline date extraction for comment period validation
-   - **Notice type detection** (proposed_rule, pra_notice, rfi, or general)
-   - Response framework appropriate to the notice type:
-     - **Proposed Rules**: Support/oppose/mixed positions with reason cards
-     - **PRA Notices**: Four PRA factor categories (necessity, burden accuracy, quality, burden minimization)
-     - **RFIs/ANPRMs**: Question-based response cards
-     - **General Notices**: Issue-based response cards
-
-2. **Citizen's Brief (On-Demand)** - Users can expand a collapsible panel to generate a detailed briefing:
+1. **First Call (Citizen's Brief)** - When you open a docket, the AI immediately generates a plain-language briefing:
    - Plain-English summary of the proposal
    - Context & stakes (why now, what triggered this)
    - Multi-perspective impact table (Public Health, Environment, Industry, Communities)
    - Response guidance with suggested angles
    - One-sentence verdict capturing both sides
    - Optional glossary for technical documents
+
+   This brief is displayed prominently so users can understand the regulation while arguments generate.
+
+2. **Second Call (Brief-Informed Analysis)** - While users read the brief, the AI generates targeted arguments in the background:
+   - Uses the brief's identified stakeholder impacts and suggested angles
+   - **Notice type detection** (proposed_rule, pra_notice, rfi, or general)
+   - Response framework appropriate to the notice type:
+     - **Proposed Rules**: Support/oppose/mixed positions with reason cards
+     - **PRA Notices**: Four PRA factor categories (necessity, burden accuracy, quality, burden minimization)
+     - **RFIs/ANPRMs**: Question-based response cards
+     - **General Notices**: Issue-based response cards
+   - Commenting instructions (deadlines, format, submission methods)
+   - Arguments are better aligned with the brief's analysis
 
 3. **Third Call (Generate Comment)** - After you select arguments, the AI drafts a formal comment incorporating:
    - Your selected reason cards

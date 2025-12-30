@@ -6,6 +6,7 @@ import {
   regenerateReasonCard,
   generateFinalComment,
   generateCitizenBrief,
+  generateAnalysisFromBrief,
   DocketAnalysis,
   Position,
   NoticeType,
@@ -435,6 +436,99 @@ async function performCitizenBriefGeneration(docketId: string): Promise<CitizenB
 
   console.log(`[actions] performCitizenBriefGeneration: brief generated and cached for ${docketId}`);
   return brief;
+}
+
+// ============================================================
+// BRIEF-INFORMED ANALYSIS (Brief → Arguments flow)
+// ============================================================
+
+/**
+ * Generate docket analysis using the Citizen's Brief as context.
+ * This produces more targeted arguments aligned with the brief's
+ * identified stakeholder impacts and suggested angles.
+ *
+ * Flow:
+ * 1. Generate/retrieve Citizen's Brief (if not provided)
+ * 2. Use brief to generate targeted DocketAnalysis
+ *
+ * This is the NEW primary flow for generating arguments.
+ */
+export async function analyzeDocketFromBriefAction(
+  docketId: string,
+  existingBrief?: CitizenBrief
+): Promise<DocketAnalysis> {
+  console.log(`[actions] analyzeDocketFromBriefAction: docketId=${docketId}, hasBrief=${!!existingBrief}`);
+
+  // Use promise coalescing to prevent duplicate in-flight requests
+  return deduplicatedRequest(`analysis-from-brief:${docketId}`, async () => {
+    return performBriefInformedAnalysis(docketId, existingBrief);
+  });
+}
+
+/**
+ * Internal function that performs the brief-informed analysis.
+ */
+async function performBriefInformedAnalysis(
+  docketId: string,
+  existingBrief?: CitizenBrief
+): Promise<DocketAnalysis> {
+  // 1. Fetch live metadata for "openForComment" status and deadline
+  let isOpenForComment: boolean | undefined = undefined;
+  let commentEndDate: string | undefined = undefined;
+  try {
+    const docMeta = await regulationsApi.getDocumentDetails(docketId);
+    if (docMeta) {
+      isOpenForComment = docMeta.openForComment;
+      commentEndDate = docMeta.commentEndDate;
+    }
+  } catch (err) {
+    console.warn(`[actions] performBriefInformedAnalysis: failed to fetch live metadata`, err);
+  }
+
+  // 2. Check if we already have a cached analysis
+  const analysisCacheKey = getAnalysisCacheKey(docketId);
+  const redisCached = await getCached<DocketAnalysis>(analysisCacheKey);
+
+  if (redisCached) {
+    console.log(`[actions] performBriefInformedAnalysis: Redis HIT for ${docketId}`);
+    return applyOpenForCommentStatus(redisCached, isOpenForComment, undefined, commentEndDate);
+  }
+
+  // Check SQLite cache
+  const sqliteCached = getAnalysisFromDb(docketId);
+  if (sqliteCached) {
+    console.log(`[actions] performBriefInformedAnalysis: SQLite HIT for ${docketId}, backfilling Redis`);
+    await setCached(analysisCacheKey, sqliteCached, CACHE_TTL.ANALYSIS);
+    return applyOpenForCommentStatus(sqliteCached, isOpenForComment, undefined, commentEndDate);
+  }
+
+  // 3. Get or generate the Citizen's Brief
+  let brief = existingBrief;
+  if (!brief) {
+    console.log(`[actions] performBriefInformedAnalysis: generating brief first`);
+    brief = await performCitizenBriefGeneration(docketId);
+  }
+
+  // 4. Perform brief-informed AI analysis
+  console.log(`[actions] performBriefInformedAnalysis: generating analysis from brief`);
+
+  const { text: docketText, objectType } = await getDocketText(docketId);
+  console.log(`[actions] performBriefInformedAnalysis: got docket text (${docketText.length} chars)`);
+
+  const analysis = await generateAnalysisFromBrief(docketText, docketId, brief);
+
+  // Apply status, objectType, commentEndDate, and timestamp
+  const result = {
+    ...applyOpenForCommentStatus(analysis, isOpenForComment, objectType, commentEndDate),
+    analyzedAt: new Date().toISOString(),
+  };
+
+  // Store in both caches
+  await setCached(analysisCacheKey, result, CACHE_TTL.ANALYSIS);
+  setAnalysisInDb(docketId, result, docketText);
+
+  console.log(`[actions] performBriefInformedAnalysis: analysis complete and cached`);
+  return result;
 }
 
 /**

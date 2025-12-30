@@ -1046,3 +1046,77 @@ export async function generateCitizenBrief(
     return { ...MOCK_CITIZEN_BRIEF, generatedAt: new Date().toISOString() };
   }
 }
+
+/**
+ * Generate DocketAnalysis from a pre-generated CitizenBrief.
+ * This produces more targeted arguments by leveraging the brief's
+ * structured analysis of stakeholder impacts and suggested angles.
+ */
+export async function generateAnalysisFromBrief(
+  docketText: string,
+  docketId: string,
+  brief: CitizenBrief
+): Promise<DocketAnalysis> {
+  console.log(`[ai-generator] generateAnalysisFromBrief: docketId=${docketId}`);
+
+  if (!API_KEY) {
+    console.log("[ai-generator] GEMINI_API_KEY not found, using mock data");
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return MOCK_DOCKET_ANALYSIS;
+  }
+
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-flash-latest",
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: docketAnalysisSchema
+    }
+  });
+
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  // Format the impact table for the prompt
+  const impactTableText = brief.impactTable.map(row =>
+    `- ${row.perspective}: Benefits: ${row.potentialBenefits || 'N/A'} | Concerns: ${row.potentialConcerns || 'N/A'} | Uncertainties: ${row.keyUncertainties || 'N/A'}`
+  ).join('\n');
+
+  // Format glossary if present
+  const glossarySection = brief.glossary && brief.glossary.length > 0
+    ? `**GLOSSARY:**\n${brief.glossary.map(g => `- ${g.term}: ${g.definition}`).join('\n')}`
+    : '';
+
+  const prompt = await loadPrompt("analyzeFromBrief", {
+    docketText: docketText.slice(0, 12000), // Slightly shorter since we have brief context
+    docketId,
+    currentDate,
+    plainEnglishSummary: brief.plainEnglishSummary,
+    contextAndStakes: brief.contextAndStakes,
+    impactTable: impactTableText,
+    suggestedAngles: brief.howToRespond.suggestedAngles.map((a, i) => `${i + 1}. ${a}`).join('\n'),
+    commentDeadline: brief.howToRespond.commentDeadline,
+    whereToSubmit: brief.howToRespond.whereToSubmit,
+    whatMakesCommentsCount: brief.howToRespond.whatMakesCommentsCount,
+    oneSentenceVerdict: brief.oneSentenceVerdict,
+    glossarySection
+  });
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    console.log(`[ai-generator] Brief-informed analysis received (${text.length} chars)`);
+
+    await logAICall("generateAnalysisFromBrief", prompt, text);
+
+    const parsed = JSON.parse(text) as DocketAnalysis;
+    console.log(`[ai-generator] Successfully parsed brief-informed analysis`);
+    return parsed;
+  } catch (error) {
+    console.error("[ai-generator] Error generating analysis from brief:", error);
+    // Fall back to standard analyzeDocket
+    console.log("[ai-generator] Falling back to standard analyzeDocket");
+    return analyzeDocket(docketText);
+  }
+}

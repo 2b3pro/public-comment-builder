@@ -19,6 +19,29 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     date: '2025-12-30',
+    version: '1.5.0',
+    title: 'Brief-First Flow',
+    changes: [
+      {
+        type: 'changed',
+        description: "Citizen's Brief now loads first, giving users a plain-language summary to read while arguments generate in background",
+      },
+      {
+        type: 'added',
+        description: 'Brief-informed argument generation: AI uses the brief\'s stakeholder impacts and suggested angles to produce more targeted arguments',
+      },
+      {
+        type: 'added',
+        description: 'New loading states and progress indicators show brief loading and argument generation stages separately',
+      },
+      {
+        type: 'changed',
+        description: 'Brief content displayed prominently on docket page (no longer collapsible) for better reading experience',
+      },
+    ],
+  },
+  {
+    date: '2025-12-30',
     version: '1.4.0',
     title: "Citizen's Brief",
     changes: [

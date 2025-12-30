@@ -10,9 +10,9 @@ import { ImpactToggle } from '@/components/ImpactToggle';
 import { SubmissionGuidelines } from '@/components/SubmissionGuidelines';
 import { CommentPreview } from '@/components/CommentPreview';
 import { ShareDocket } from '@/components/ShareDocket';
-import { CitizenBrief } from '@/components/CitizenBrief';
 import {
-  analyzeDocketContent,
+  generateCitizenBriefAction,
+  analyzeDocketFromBriefAction,
   regenerateReasonCardAction,
   generateCommentDraft,
   forceReanalyzeDocket
@@ -22,7 +22,8 @@ import {
   Position,
   NoticeType,
   ReasonCard,
-  ArgumentOption
+  ArgumentOption,
+  CitizenBrief as CitizenBriefType
 } from '@/lib/ai-generator';
 
 type Step = 'loading' | 'stance' | 'reasoning' | 'drafting' | 'review';
@@ -84,6 +85,11 @@ export default function DocketPage() {
   const [analysis, setAnalysis] = useState<DocketAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Brief-first flow: Brief loads first, then analysis generates in background
+  const [brief, setBrief] = useState<CitizenBriefType | null>(null);
+  const [isBriefLoading, setIsBriefLoading] = useState(true);
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+
   // User selections
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [selectedArgumentIds, setSelectedArgumentIds] = useState<string[]>([]);
@@ -99,24 +105,36 @@ export default function DocketPage() {
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   // ============================================================
-  // FIRST AI CALL: Analyze docket on mount
+  // BRIEF-FIRST FLOW: Load brief first, then generate analysis in background
   // ============================================================
   useEffect(() => {
-    const loadAnalysis = async () => {
+    const loadBriefAndAnalysis = async () => {
       try {
-        console.log(`[DocketPage] Starting docket analysis for ${docketId}`);
-        const result = await analyzeDocketContent(docketId);
-        setAnalysis(result);
-        setStep('stance');
+        // Step 1: Load the Citizen's Brief
+        console.log(`[DocketPage] Loading Citizen's Brief for ${docketId}`);
+        setIsBriefLoading(true);
+        const briefResult = await generateCitizenBriefAction(docketId);
+        setBrief(briefResult);
+        setIsBriefLoading(false);
+        setStep('stance'); // Show brief immediately, user can start reading
+
+        // Step 2: Start generating analysis in background using the brief
+        console.log(`[DocketPage] Starting brief-informed analysis in background`);
+        setIsAnalysisLoading(true);
+        const analysisResult = await analyzeDocketFromBriefAction(docketId, briefResult);
+        setAnalysis(analysisResult);
+        setIsAnalysisLoading(false);
         console.log(`[DocketPage] Analysis complete`);
       } catch (err) {
-        console.error('[DocketPage] Error analyzing docket:', err);
+        console.error('[DocketPage] Error in brief-first flow:', err);
         setError('Failed to analyze this docket. Please try again.');
-        setStep('stance'); // Still allow them to proceed with limited functionality
+        setIsBriefLoading(false);
+        setIsAnalysisLoading(false);
+        setStep('stance');
       }
     };
 
-    loadAnalysis();
+    loadBriefAndAnalysis();
   }, [docketId]);
 
   // ============================================================
@@ -405,26 +423,26 @@ export default function DocketPage() {
   };
 
   // ============================================================
-  // RENDER: Loading State
+  // RENDER: Loading State (Brief-first flow)
   // ============================================================
   if (step === 'loading') {
     return (
       <>
-        <Header title="Analyzing Docket..." subtitle="Please wait" onBack={() => window.history.back()} />
+        <Header title="Preparing Brief..." subtitle="Please wait" onBack={() => window.history.back()} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center px-8">
             <div className="mb-6">
-              <span className="material-symbols-outlined text-6xl text-primary animate-pulse">psychology</span>
+              <span className="material-symbols-outlined text-6xl text-indigo-500 animate-pulse">article</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Analyzing...</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Preparing Your Brief</h2>
             <p className="text-gray-500 text-sm max-w-xs mx-auto">
-              Our AI is reading the docket and preparing structured arguments for all positions...
+              Our AI is reading the docket and preparing a plain-language summary for you...
             </p>
             <div className="mt-6 flex justify-center">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
             </div>
           </div>
@@ -615,39 +633,143 @@ export default function DocketPage() {
           </div>
 
           {/* ============================================================ */}
-          {/* STEP 1: Summary & Stance Selection */}
+          {/* STEP 1: Citizen's Brief & Stance Selection (Brief-First Flow) */}
           {/* ============================================================ */}
           {step === 'stance' && !isCommentPeriodClosed(analysis) && (
             <div className="px-4 pt-6 animate-slide-up">
 
-              {/* AI-Generated Summary */}
-              <div className="mb-8 bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="material-symbols-outlined text-primary">auto_awesome</span>
-                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
-                    What This Regulation Does
-                  </h3>
-                </div>
-                {analysis ? (
-                  <div className="prose prose-sm text-gray-700 leading-relaxed">
-                    <p>{analysis.summary}</p>
-
-                    {/* Commenting Requirements */}
-                    {analysis.commentingInstructions.requiredPoints && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 uppercase mb-2">
-                          Agency Requests Comments On:
-                        </p>
-                        <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
-                          {analysis.commentingInstructions.requiredPoints.map((point, i) => (
-                            <li key={i}>{point}</li>
-                          ))}
-                        </ul>
+              {/* Citizen's Brief - Prominently displayed (Brief-First Flow) */}
+              {brief && (
+                <div className="mb-6 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl overflow-hidden">
+                  {/* Brief Header */}
+                  <div className="p-4 border-b border-indigo-100">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
+                        <span className="material-symbols-outlined">article</span>
                       </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900">Citizen's Brief</span>
+                        <span className="text-xs text-indigo-600 font-medium">
+                          Plain-language explainer for this regulation
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Brief Content */}
+                  <div className="p-4 space-y-5">
+                    {/* Plain English Summary */}
+                    <section>
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">summarize</span>
+                        What This Proposes
+                      </h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {brief.plainEnglishSummary}
+                      </p>
+                    </section>
+
+                    {/* Context & Stakes */}
+                    <section className="pt-3 border-t border-indigo-100">
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">history</span>
+                        Context & Stakes
+                      </h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {brief.contextAndStakes}
+                      </p>
+                    </section>
+
+                    {/* Impact Table */}
+                    <section className="pt-3 border-t border-indigo-100">
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">balance</span>
+                        Who's Affected
+                      </h4>
+                      <div className="overflow-x-auto -mx-4 px-4">
+                        <table className="w-full text-xs border-collapse min-w-[500px]">
+                          <thead>
+                            <tr className="bg-indigo-100/50">
+                              <th className="text-left p-2 font-semibold text-indigo-900 rounded-tl-lg">Perspective</th>
+                              <th className="text-left p-2 font-semibold text-green-700">Benefits</th>
+                              <th className="text-left p-2 font-semibold text-red-700">Concerns</th>
+                              <th className="text-left p-2 font-semibold text-amber-700 rounded-tr-lg">Uncertainties</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {brief.impactTable.map((row, idx) => (
+                              <tr key={idx} className="border-t border-indigo-100">
+                                <td className="p-2 font-medium text-gray-900">{row.perspective}</td>
+                                <td className="p-2 text-gray-600">{row.potentialBenefits || '-'}</td>
+                                <td className="p-2 text-gray-600">{row.potentialConcerns || '-'}</td>
+                                <td className="p-2 text-gray-600">{row.keyUncertainties || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+
+                    {/* How to Respond */}
+                    <section className="pt-3 border-t border-indigo-100">
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">edit_note</span>
+                        How to Respond
+                      </h4>
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <p>
+                          <span className="font-medium text-gray-900">Deadline:</span>{' '}
+                          {brief.howToRespond.commentDeadline}
+                        </p>
+                        <p>
+                          <span className="font-medium text-gray-900">Submit:</span>{' '}
+                          {brief.howToRespond.whereToSubmit}
+                        </p>
+                        <div className="bg-white/70 p-3 rounded-lg border border-indigo-100 mt-2">
+                          <p className="text-xs text-gray-600 mb-2">
+                            {brief.howToRespond.whatMakesCommentsCount}
+                          </p>
+                          <p className="text-xs font-medium text-indigo-800 mb-1">Suggested angles:</p>
+                          <ul className="list-disc list-inside text-xs text-gray-600 space-y-1">
+                            {brief.howToRespond.suggestedAngles.map((angle, idx) => (
+                              <li key={idx}>{angle}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* One-Sentence Verdict */}
+                    <section className="pt-3 border-t border-indigo-100">
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">gavel</span>
+                        Bottom Line
+                      </h4>
+                      <p className="text-sm text-gray-800 font-medium italic bg-white/70 p-3 rounded-lg border border-indigo-100">
+                        "{brief.oneSentenceVerdict}"
+                      </p>
+                    </section>
+
+                    {/* Glossary (if present) */}
+                    {brief.glossary && brief.glossary.length > 0 && (
+                      <section className="pt-3 border-t border-indigo-100">
+                        <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm">dictionary</span>
+                          Key Terms
+                        </h4>
+                        <dl className="text-xs space-y-1">
+                          {brief.glossary.map((item, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <dt className="font-semibold text-gray-900">{item.term}:</dt>
+                              <dd className="text-gray-600">{item.definition}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </section>
                     )}
 
-                    {/* Link to original on Regulations.gov */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    {/* Link to original + brief timestamp */}
+                    <div className="pt-3 border-t border-indigo-100 flex items-center justify-between">
                       <a
                         href={`https://www.regulations.gov/${analysis?.objectType || 'document'}/${encodeURIComponent(docketId)}`}
                         target="_blank"
@@ -657,41 +779,53 @@ export default function DocketPage() {
                         <span className="material-symbols-outlined text-sm">open_in_new</span>
                         View original on Regulations.gov
                       </a>
-                    </div>
-
-                    {/* Analysis info and reanalyze button */}
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                       <span className="text-xs text-gray-400">
-                        {analysis.analyzedAt
-                          ? `Analyzed ${new Date(analysis.analyzedAt).toLocaleDateString()} at ${new Date(analysis.analyzedAt).toLocaleTimeString()}`
-                          : 'Analysis from cache'
-                        }
+                        Brief generated {new Date(brief.generatedAt).toLocaleDateString()}
                       </span>
-                      <button
-                        onClick={handleForceReanalyze}
-                        disabled={isReanalyzing}
-                        className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span className={`material-symbols-outlined text-sm ${isReanalyzing ? 'animate-spin' : ''}`}>
-                          {isReanalyzing ? 'progress_activity' : 'refresh'}
-                        </span>
-                        {isReanalyzing ? 'Reanalyzing...' : 'Reanalyze'}
-                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Citizen's Brief - On-demand plain-language explainer */}
-              <div className="mb-6">
-                <CitizenBrief docketId={docketId} />
-              </div>
+              {/* Arguments Loading Indicator (Brief-First Flow) */}
+              {isAnalysisLoading && (
+                <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary animate-spin">progress_activity</span>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">Generating argument options...</p>
+                      <p className="text-xs text-blue-700">
+                        Our AI is preparing targeted arguments based on the brief above. You can continue reading while this loads.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Analysis Ready Indicator */}
+              {analysis && !isAnalysisLoading && (
+                <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-green-600">check_circle</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-900">Arguments ready!</p>
+                      <p className="text-xs text-green-700">
+                        {currentReasonCards.length} argument categories generated. Select your stance to continue.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleForceReanalyze}
+                      disabled={isReanalyzing}
+                      className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <span className={`material-symbols-outlined text-sm ${isReanalyzing ? 'animate-spin' : ''}`}>
+                        {isReanalyzing ? 'progress_activity' : 'refresh'}
+                      </span>
+                      {isReanalyzing ? 'Reanalyzing...' : 'Regenerate'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* For proposed_rule: Show stance selection */}
               {analysis?.noticeType === 'proposed_rule' && analysis.positions && (
@@ -786,18 +920,30 @@ export default function DocketPage() {
               <div className="mt-8">
                 <button
                   onClick={handleContinueToReasoning}
-                  disabled={analysis?.noticeType === 'proposed_rule' && !selectedPosition}
+                  disabled={isAnalysisLoading || (analysis?.noticeType === 'proposed_rule' && !selectedPosition)}
                   className={`w-full flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg transition-all ${
-                    (analysis?.noticeType === 'proposed_rule' && !selectedPosition)
+                    isAnalysisLoading || (analysis?.noticeType === 'proposed_rule' && !selectedPosition)
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-primary hover:bg-blue-600 shadow-blue-500/30"
                   }`}
                 >
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                  {analysis?.noticeType === 'proposed_rule' ? 'Choose My Arguments' : 'Select Response Topics'}
+                  {isAnalysisLoading ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                      Generating Arguments...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">arrow_forward</span>
+                      {analysis?.noticeType === 'proposed_rule' ? 'Choose My Arguments' : 'Select Response Topics'}
+                    </>
+                  )}
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-3">
-                  {currentReasonCards.length || 0} {analysis?.noticeType === 'proposed_rule' ? 'argument categories' : 'response topics'} available
+                  {isAnalysisLoading
+                    ? 'Arguments are being generated based on the brief above...'
+                    : `${currentReasonCards.length || 0} ${analysis?.noticeType === 'proposed_rule' ? 'argument categories' : 'response topics'} available`
+                  }
                 </p>
               </div>
 

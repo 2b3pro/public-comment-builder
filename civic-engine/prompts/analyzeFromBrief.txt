@@ -1,0 +1,160 @@
+Generate a citizen-facing response framework based on this pre-analyzed Citizen's Brief. The brief has already distilled the regulatory document into stakeholder impacts and key concerns.
+
+CURRENT DATE: {{currentDate}}
+DOCKET ID: {{docketId}}
+
+════════════════════════════════════════════════════════════════════
+PRE-ANALYZED CITIZEN'S BRIEF
+════════════════════════════════════════════════════════════════════
+
+**PLAIN-ENGLISH SUMMARY:**
+{{plainEnglishSummary}}
+
+**CONTEXT & STAKES:**
+{{contextAndStakes}}
+
+**IMPACT TABLE:**
+{{impactTable}}
+
+**SUGGESTED ANGLES FOR COMMENT:**
+{{suggestedAngles}}
+
+**HOW TO RESPOND:**
+- Deadline: {{commentDeadline}}
+- Submission: {{whereToSubmit}}
+- What Makes Comments Count: {{whatMakesCommentsCount}}
+
+**ONE-SENTENCE VERDICT:**
+{{oneSentenceVerdict}}
+
+{{glossarySection}}
+
+════════════════════════════════════════════════════════════════════
+ORIGINAL DOCKET TEXT (for reference)
+════════════════════════════════════════════════════════════════════
+
+{{docketText}}
+
+════════════════════════════════════════════════════════════════════
+TASK: GENERATE TARGETED RESPONSE CARDS
+════════════════════════════════════════════════════════════════════
+
+Using the pre-analyzed brief above, generate reason cards that are directly aligned with:
+1. The identified stakeholder impacts (from Impact Table)
+2. The specific angles the agency is asking commenters to address
+3. The key uncertainties and concerns already identified
+
+OPERATING PREMISE (Federal Reality Check):
+• Comments that merely express support or opposition carry little weight.
+• Agencies must respond to significant, relevant, evidence-based comments.
+• The strongest comments explain *how* the proposal affects real people, assumptions, markets, or systems.
+
+════════════════════════════════════════════════════════════════════
+STEP 1: DETECT THE NOTICE TYPE
+════════════════════════════════════════════════════════════════════
+
+Determine what type of federal notice this is based on the docket text:
+
+1. **proposed_rule** - Notice of Proposed Rulemaking (NPRM)
+   - Look for: "proposed rule", "proposed regulation", "rulemaking"
+   - Response framework: Support / Oppose / Mixed positions
+
+2. **pra_notice** - Paperwork Reduction Act Information Collection Request
+   - Look for: "Paperwork Reduction Act", "PRA", "OMB Control Number", "burden estimate"
+   - Response framework: PRA factors (necessity, burden accuracy, quality, burden minimization)
+
+3. **rfi** - Request for Information or Advance Notice of Proposed Rulemaking
+   - Look for: "request for information", "RFI", "ANPRM", numbered questions
+   - Response framework: Question-based response cards
+
+4. **general** - Other notices
+   - Response framework: Issue-based response cards
+
+Set `noticeType` to one of: "proposed_rule", "pra_notice", "rfi", "general"
+
+════════════════════════════════════════════════════════════════════
+STEP 2: USE PRE-ANALYZED SUMMARY
+════════════════════════════════════════════════════════════════════
+
+Use the PLAIN-ENGLISH SUMMARY from the brief directly. You may lightly rephrase for clarity but preserve the meaning.
+
+════════════════════════════════════════════════════════════════════
+STEP 3: COMMENTING INSTRUCTIONS
+════════════════════════════════════════════════════════════════════
+
+Extract from the HOW TO RESPOND section and original docket text:
+
+**SUBMISSION METHOD EXTRACTION:**
+A) **submissionEmail**: Exact email address if mentioned, otherwise "NONE"
+B) **onlineSubmission**: TRUE if regulations.gov or similar portal accepted (default TRUE)
+C) **submissionMethodsDescription**: User-friendly sentence describing ALL submission methods
+
+**DEADLINE EXTRACTION:**
+D) **deadline**: Human-readable description from brief
+E) **deadlineDate**: ISO 8601 date (YYYY-MM-DD), calculate from relative deadlines using CURRENT DATE
+F) **responsePeriodDays**: Number of days in comment period, or 0 if unknown
+
+**openForComment**: TRUE if deadline is in the future based on CURRENT DATE
+
+════════════════════════════════════════════════════════════════════
+STEP 4: GENERATE RESPONSE FRAMEWORK
+════════════════════════════════════════════════════════════════════
+
+**CRITICAL: Use the Impact Table and Suggested Angles as your primary source for generating reason cards.**
+
+For each perspective in the Impact Table that has substantive content, consider generating cards that address:
+- The potential benefits (for support positions)
+- The potential concerns (for oppose positions)
+- The key uncertainties (for mixed positions or blind spots)
+
+For each Suggested Angle, ensure at least one card directly addresses that question.
+
+{{responseFrameworks}}
+
+════════════════════════════════════════════════════════════════════
+STEP 5: REASON CARD STRUCTURE
+════════════════════════════════════════════════════════════════════
+
+Every reason card must include:
+
+• **Unique ID** (e.g., `sup-cost-1`, `opp-health-2`, `mix-env-1`)
+
+• **Topic** - Short, descriptive, neutral-toned (align with Impact Table perspectives where possible)
+
+• **Icon Tag** - Choose ONE Material Symbol:
+  shield · lock · timer · lightbulb · verified_user · speed · smartphone · tune · filter_list · policy · gavel · description · trending_up · visibility · groups · balance · warning · calculate · fact_check · edit_document · help_outline
+
+• **Arguments (MINIMUM 2, preferably 3–4 per card)** - Each must:
+  – Reference a specific provision, assumption, estimate, or mechanism
+  – Tie back to the Impact Table concerns/benefits when possible
+  – Be phrased in formal, substantive language
+  – NEVER create a card with only 1 argument
+
+• **Lived-Experience Hook** - Based on the "Affected Communities" perspective in the Impact Table, describe how someone might credibly support this argument with real-world experience
+
+• **Blind Spots** - Draw from "Key Uncertainties" in the Impact Table
+
+════════════════════════════════════════════════════════════════════
+OUTPUT STRUCTURE
+════════════════════════════════════════════════════════════════════
+
+Your response MUST include:
+
+1. `noticeType`: One of "proposed_rule", "pra_notice", "rfi", "general"
+2. `summary`: Use or adapt the plain-English summary from the brief
+3. `openForComment`: Boolean
+4. `commentingInstructions`: Object with deadline, format, submission info
+
+5. **One of the following based on noticeType:**
+   - If "proposed_rule": `positions` object with support/oppose/mixed
+   - If "pra_notice": `praFactors` object
+   - If "rfi": `rfiQuestions` array
+   - If "general": `issueCards` array
+
+════════════════════════════════════════════════════════════════════
+QUALITY BARS
+════════════════════════════════════════════════════════════════════
+• Neutral, professional, legally literate tone
+• Arguments should clearly trace back to the brief's identified impacts
+• Every claim must be tethered to the docket text or a plausible evidentiary gap
+• Assume the output will be used verbatim in a federal rulemaking record
